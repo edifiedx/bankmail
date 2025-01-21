@@ -84,16 +84,30 @@ function Options.Show(self)
     -- Auto-switch toggle
     local disableAutoSwitch = checkbox("Disable Auto-Switch for Bank Character",
         "Disable automatic tab switching when on the bank character",
-        function(_, checked) BankMailDB.disableAutoSwitchOnBank = checked end)
+        function(_, checked)
+            if not BankMailDB then BankMailDB = {} end
+            BankMailDB.disableAutoSwitchOnBank = checked
+            print("BankMail: Auto-switch for bank character " .. (checked and "disabled" or "enabled"))
+        end)
     disableAutoSwitch:SetPoint("TOPLEFT", bankCharInput, "BOTTOMLEFT", -2, -8)
 
     -- Debug mode toggle
     local debugMode = checkbox("Debug Mode",
         "Enable debug logging",
-        function(_, checked) BankMailDB.debugMode = checked end)
+        function(_, checked)
+            if not BankMailDB then BankMailDB = {} end
+            BankMailDB.debugMode = checked
+            print("BankMail: Debug mode " .. (checked and "enabled" or "disabled"))
+        end)
     debugMode:SetPoint("TOPLEFT", disableAutoSwitch, "BOTTOMLEFT", 0, -8)
 
     local function init()
+        if not BankMailDB then BankMailDB = {} end
+        BankMailDB.enabled = BankMailDB.enabled ~= nil and BankMailDB.enabled or true
+        BankMailDB.disableAutoSwitchOnBank = BankMailDB.disableAutoSwitchOnBank ~= nil and
+        BankMailDB.disableAutoSwitchOnBank or true
+        BankMailDB.debugMode = BankMailDB.debugMode ~= nil and BankMailDB.debugMode or false
+
         enableAddon:SetChecked(BankMailDB.enabled)
         bankCharInput:SetText(BankMailDB.accountDefaultRecipient or "")
         disableAutoSwitch:SetChecked(BankMailDB.disableAutoSwitchOnBank)
