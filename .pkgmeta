@@ -1,0 +1,12 @@
+package-as: BankMail
+enable-nolib-creation: no
+
+ignore:
+  - README.md
+  - .gitignore
+  - .git
+  - .github
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
