@@ -173,46 +173,36 @@ local function HandleSlashCommand(msg)
     if command == "toggle" then
         BankMailDB.enabled = not BankMailDB.enabled
         print("BankMail: " .. (BankMailDB.enabled and "Enabled" or "Disabled"))
-    elseif command == "set" and arg ~= "" then
-        SetAccountDefaultRecipient(arg)
-    elseif command == "setcharacter" and arg ~= "" or command == "sc" and arg ~= "" then
-        SetCharacterDefaultRecipient(arg)
-    elseif command == "clear" then
-        local charKey = GetCharacterKey()
-        BankMailDB.characterRecipients[charKey] = nil
-        print("BankMail: Cleared character-specific recipient for " .. charKey)
-    elseif command == "clearaccount" then
-        BankMailDB.accountDefaultRecipient = nil
-        print("BankMail: Cleared account-wide default recipient")
+    elseif command == "set" then
+        if arg == "" then
+            BankMailDB.accountDefaultRecipient = nil
+            print("BankMail: Cleared account-wide default recipient")
+        else
+            SetAccountDefaultRecipient(arg)
+        end
+    elseif command == "setcharacter" or command == "sc" then
+        if arg == "" then
+            local charKey = GetCharacterKey()
+            BankMailDB.characterRecipients[charKey] = nil
+            print("BankMail: Cleared character-specific recipient")
+        else
+            SetCharacterDefaultRecipient(arg)
+        end
     elseif command == "show" then
         local charKey = GetCharacterKey()
         local charRecipient = BankMailDB.characterRecipients[charKey]
         local accountRecipient = BankMailDB.accountDefaultRecipient
+        local effectiveRecipient = GetDefaultRecipient()
 
-        if accountRecipient then
-            print("BankMail: Account-wide default recipient: " .. accountRecipient)
-        else
-            print("BankMail: No account-wide default recipient set")
-        end
-
-        if charRecipient then
-            print("BankMail: Character-specific recipient for " .. charKey .. ": " .. charRecipient)
-        else
-            print("BankMail: No character-specific recipient set for " .. charKey)
-        end
-
-        local effective = GetDefaultRecipient()
-        if effective then
-            print("BankMail: Currently using recipient: " .. effective)
-        end
+        print("BankMail settings:")
+        print("- Account default: " .. (accountRecipient or "none"))
+        print("- Character default: " .. (charRecipient or "none"))
+        print("- Currently using: " .. (effectiveRecipient or "none"))
     else
         print("BankMail commands:")
         print("/bank toggle - Enable/disable automatic tab switching")
-        print("/bank set CharacterName - Set account-wide default recipient")
-        print("/bank setcharacter CharacterName - Set character-specific default recipient")
-        print("/bank sc CharacterName - Short version of setcharacter")
-        print("/bank clearaccount - Clear account-wide default recipient")
-        print("/bank clear - Clear character-specific recipient")
+        print("/bank set CharacterName - Set account-wide default recipient (use empty to clear)")
+        print("/bank setcharacter CharacterName - Set character-specific default recipient (use empty to clear)")
         print("/bank show - Show current recipient settings")
     end
 end
