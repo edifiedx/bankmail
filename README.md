@@ -9,10 +9,12 @@ BankMail is a lightweight World of Warcraft addon that streamlines sending mail 
   - Remembers your bank character
   - Auto-fills recipient field
   - Supports character-specific or account-wide defaults
-- **Auction House Integration**: "Open Coin" button to quickly collect auction house earnings
+- **Auction House Integration**:
+  - "Open Coin" button to quickly collect auction house earnings
+  - Right-click message to collect attachments
 - **Bank Character Options**: Configurable auto-switching behavior for your bank character
 - **Simple Configuration**:
-  - Use slash commands (`/bm` or `/bankmail`)
+  - Use slash commands (`/bank` or `/bankmail`)
   - Clean options panel for all settings
 
 ## Why BankMail?
@@ -23,10 +25,10 @@ For hardcore players, every second counts and every inventory slot matters. Bank
 
 ### Basic Commands
 
-/bm toggle - Enable/disable automatic tab switching
-/bm set CharacterName - Set account-wide default recipient
-/bm setcharacter CharacterName - Set character-specific default recipient
-/bm show - Show current recipient settings
+- `/bank toggle` - Enable/disable automatic tab switching
+- `/bank set CharacterName` - Set account-wide default recipient
+- `/bank setcharacter CharacterName` - Set character-specific default recipient
+- `/bank show` - Show current recipient settings
 
 ## Perfect for:
 
