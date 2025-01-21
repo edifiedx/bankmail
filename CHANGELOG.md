@@ -1,6 +1,17 @@
 # BankMail Changelog
 
-## 0.7.0 (2025-01-21)
+## [0.8.0] - (2025-01-21)
+
+- Extracted auto-switch functionality into new BankMail_AutoSwitch module
+- Added debug logging for mail sessions and switch conditions
+- Module initialization and dependency handling improvements
+- Fixed timer cleanup when closing mail window
+- Better character/realm data initialization
+- Improved error handling for missing modules
+- Recipient management handling in AutoSwitch module
+- Updated TOC
+
+## [0.7.0] - (2025-01-21)
 
 - Fixed critical bug where addon settings weren't properly initializing for new users
 - Removed unused right-click menu system in favor of the options panel
@@ -9,7 +20,7 @@
 - Improved timer handling to prevent conflicts when opening/closing mail
 - Added delay when auto-focusing mail subject box to prevent autocomplete issues
 
-## 0.6.0 (2025-01-20)
+## [0.6.0] - (2025-01-20)
 
 - Initial GitHub release
 - Added automatic tab switching for mail
