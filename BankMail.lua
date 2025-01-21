@@ -10,6 +10,7 @@ frame:RegisterEvent("PLAYER_LOGIN")
 local addonName = "BankMail"
 
 local BankMail_Money = _G[addonName .. "_Money"]
+local BankMail_AutoSwitch = _G[addonName .. "_AutoSwitch"]
 
 -- Update default settings
 local defaults = {
@@ -20,197 +21,22 @@ local defaults = {
     disableAutoSwitchOnBank = true -- Default to true since it's likely desired behavior
 }
 
-local currentRealm
-local currentChar
-local mailLoadTimer = nil
-local currentMailSession = false
-
--- Helper function to check if current character is the bank character
-local function IsCurrentCharacterBank()
-    local currentCharKey = GetCharacterKey()
-    local bankChar = BankMailDB.accountDefaultRecipient
-
-    -- If bank character doesn't include realm, append current realm
-    if bankChar and not bankChar:find("-") then
-        bankChar = bankChar .. "-" .. currentRealm
-    end
-
-    return bankChar and currentCharKey == bankChar
-end
-
--- Function to get current character's full name
-local function GetCharacterKey()
-    return currentChar .. "-" .. currentRealm
-end
-
--- Function to get default recipient for current character
-local function GetDefaultRecipient()
-    local charKey = GetCharacterKey()
-    -- First check character-specific recipient
-    if BankMailDB.characterRecipients[charKey] then
-        return BankMailDB.characterRecipients[charKey]
-    end
-    -- Fall back to account-wide default
-    return BankMailDB.accountDefaultRecipient
-end
-
+-- Function to set account-wide default recipient
 local function SetAccountDefaultRecipient(recipient)
     -- If recipient doesn't include a realm, append current realm
     if not recipient:find("-") then
-        recipient = recipient .. "-" .. currentRealm
+        recipient = recipient .. "-" .. GetRealmName()
     end
     BankMailDB.accountDefaultRecipient = recipient
     print("BankMail: Account-wide default recipient set to: " .. recipient)
 end
 
+-- Function to set character-specific default recipient
 local function SetCharacterDefaultRecipient(recipient)
-    local charKey = GetCharacterKey()
+    local charKey = BankMail_AutoSwitch:GetCharacterKey()
     BankMailDB.characterRecipients[charKey] = recipient
     print("BankMail: Character-specific default recipient for " .. charKey .. " set to: " .. recipient)
 end
-
--- Function to check for unread mail
-local function HasUnreadMail()
-    local numItems = GetInboxNumItems()
-    for i = 1, numItems do
-        local _, _, _, _, _, _, _, _, wasRead = GetInboxHeaderInfo(i)
-        if not wasRead then
-            return true
-        end
-    end
-    return false
-end
-
--- CheckAndSwitchTab function
-local function CheckAndSwitchTab()
-    -- Validate requirements before proceeding
-    if not BankMailDB or not BankMailDB.enabled then
-        return
-    end
-
-    if not currentRealm or not currentChar then
-        if BankMailDB.debugMode then
-            print("BankMail: Missing character data, aborting tab switch")
-        end
-        return
-    end
-
-    if not MailFrame:IsVisible() then
-        return
-    end
-
-    -- Cancel any pending timer
-    if mailLoadTimer then
-        mailLoadTimer:Cancel()
-        mailLoadTimer = nil
-    end
-
-    -- Check if we should disable auto-switch for bank character
-    if BankMailDB.disableAutoSwitchOnBank and IsCurrentCharacterBank() then
-        if BankMailDB.debugMode then
-            print("BankMail: Auto-switch disabled for bank character")
-        end
-        return
-    end
-
-    -- Set up new timer with error handling
-    mailLoadTimer = C_Timer.NewTimer(0.3, function()
-        if not MailFrame:IsVisible() then return end
-
-        if not HasUnreadMail() then
-            -- Ensure the UI elements exist before trying to use them
-            if MailFrameTab2 and SendMailNameEditBox then
-                MailFrameTab2:Click()
-
-                -- Auto-fill recipient if one is set
-                local recipient = GetDefaultRecipient()
-                if recipient and SendMailNameEditBox:GetText() == "" then
-                    SendMailNameEditBox:SetText(recipient)
-                    -- Add delay before focusing subject box
-                    C_Timer.After(0.1, function()
-                        if SendMailSubjectEditBox then
-                            SendMailSubjectEditBox:SetFocus()
-                        end
-                    end)
-                end
-
-                currentMailSession = true
-            end
-        end
-        mailLoadTimer = nil
-    end)
-end
-
--- Update the StartMailLoad and FinishMailLoad functions
-local function StartMailLoad()
-    if BankMailDB.debugMode then
-        print("BankMail: Starting mail load")
-    end
-    if mailLoadTimer then
-        mailLoadTimer:Cancel()
-        mailLoadTimer = nil
-    end
-end
-
-local function FinishMailLoad()
-    if BankMailDB.debugMode then
-        print("BankMail: Finishing mail load")
-        print("BankMail: Status:")
-        print("BankMail: - Addon Enabled:", BankMailDB.enabled)
-        print("BankMail: - Mail Frame Visible:", MailFrame:IsVisible())
-        print("BankMail: - Has Unread Mail:", HasUnreadMail())
-        print("BankMail: - Is Bank Character:", IsCurrentCharacterBank())
-        print("BankMail: - Auto-switch Disabled for Bank:", BankMailDB.disableAutoSwitchOnBank)
-    end
-    CheckAndSwitchTab()
-end
-
--- Slash command handler
-local function HandleSlashCommand(msg)
-    local command, arg = msg:match("^(%S*)%s*(.-)$")
-    command = command:lower()
-
-    if command == "toggle" then
-        BankMailDB.enabled = not BankMailDB.enabled
-        print("BankMail: " .. (BankMailDB.enabled and "Enabled" or "Disabled"))
-    elseif command == "set" then
-        if arg == "" then
-            BankMailDB.accountDefaultRecipient = nil
-            print("BankMail: Cleared account-wide default recipient")
-        else
-            SetAccountDefaultRecipient(arg)
-        end
-    elseif command == "setcharacter" or command == "sc" then
-        if arg == "" then
-            local charKey = GetCharacterKey()
-            BankMailDB.characterRecipients[charKey] = nil
-            print("BankMail: Cleared character-specific recipient")
-        else
-            SetCharacterDefaultRecipient(arg)
-        end
-    elseif command == "show" then
-        local charKey = GetCharacterKey()
-        local charRecipient = BankMailDB.characterRecipients[charKey]
-        local accountRecipient = BankMailDB.accountDefaultRecipient
-        local effectiveRecipient = GetDefaultRecipient()
-
-        print("BankMail settings:")
-        print("- Account default: " .. (accountRecipient or "none"))
-        print("- Character default: " .. (charRecipient or "none"))
-        print("- Currently using: " .. (effectiveRecipient or "none"))
-    else
-        print("BankMail commands:")
-        print("/bank toggle - Enable/disable automatic tab switching")
-        print("/bank set CharacterName - Set account-wide default recipient (use empty to clear)")
-        print("/bank setcharacter CharacterName - Set character-specific default recipient (use empty to clear)")
-        print("/bank show - Show current recipient settings")
-    end
-end
-
--- Register slash commands
-SLASH_BANKMAIL1 = "/bankmail"
-SLASH_BANKMAIL2 = "/bank"
-SlashCmdList["BANKMAIL"] = HandleSlashCommand
 
 -- Function to take all attachments from a mail
 local function TakeAllAttachments(mailIndex)
@@ -299,8 +125,54 @@ local function HookInboxButtons()
     end
 end
 
+-- Slash command handler
+local function HandleSlashCommand(msg)
+    local command, arg = msg:match("^(%S*)%s*(.-)$")
+    command = command:lower()
+
+    if command == "toggle" then
+        BankMailDB.enabled = not BankMailDB.enabled
+        print("BankMail: " .. (BankMailDB.enabled and "Enabled" or "Disabled"))
+    elseif command == "set" then
+        if arg == "" then
+            BankMailDB.accountDefaultRecipient = nil
+            print("BankMail: Cleared account-wide default recipient")
+        else
+            SetAccountDefaultRecipient(arg)
+        end
+    elseif command == "setcharacter" or command == "sc" then
+        if arg == "" then
+            local charKey = BankMail_AutoSwitch:GetCharacterKey()
+            BankMailDB.characterRecipients[charKey] = nil
+            print("BankMail: Cleared character-specific recipient")
+        else
+            SetCharacterDefaultRecipient(arg)
+        end
+    elseif command == "show" then
+        local charKey = BankMail_AutoSwitch:GetCharacterKey()
+        local charRecipient = BankMailDB.characterRecipients[charKey]
+        local accountRecipient = BankMailDB.accountDefaultRecipient
+        local effectiveRecipient = BankMail_AutoSwitch:GetDefaultRecipient()
+
+        print("BankMail settings:")
+        print("- Account default: " .. (accountRecipient or "none"))
+        print("- Character default: " .. (charRecipient or "none"))
+        print("- Currently using: " .. (effectiveRecipient or "none"))
+    else
+        print("BankMail commands:")
+        print("/bank toggle - Enable/disable automatic tab switching")
+        print("/bank set CharacterName - Set account-wide default recipient (use empty to clear)")
+        print("/bank setcharacter CharacterName - Set character-specific default recipient (use empty to clear)")
+        print("/bank show - Show current recipient settings")
+    end
+end
+
+-- Register slash commands
+SLASH_BANKMAIL1 = "/bankmail"
+SLASH_BANKMAIL2 = "/bank"
+SlashCmdList["BANKMAIL"] = HandleSlashCommand
+
 -- Event handler
--- Event handler with proper initialization and error handling
 frame:SetScript("OnEvent", function(self, event, ...)
     local arg1 = ...
 
@@ -330,17 +202,16 @@ frame:SetScript("OnEvent", function(self, event, ...)
         end
     end
 
-    -- Handle player login - initialize character data
+    -- Handle player login - initialize modules
     if event == "PLAYER_LOGIN" then
-        -- Initialize character and realm data
-        currentRealm = GetRealmName()
-        currentChar = UnitName("player")
-
-        if BankMailDB.debugMode then
-            print("BankMail: Logged in as", currentChar, "on", currentRealm)
+        -- Initialize auto-switch module
+        if BankMail_AutoSwitch and BankMail_AutoSwitch.Init then
+            BankMail_AutoSwitch:Init()
+        else
+            print("BankMail: Warning - AutoSwitch module not found")
         end
 
-        -- Initialize money module after character data is available
+        -- Initialize money module
         if BankMail_Money and BankMail_Money.Init then
             BankMail_Money:Init()
         else
@@ -351,23 +222,11 @@ frame:SetScript("OnEvent", function(self, event, ...)
     -- Handle mail window opening
     if event == "MAIL_SHOW" then
         if BankMailDB.debugMode then
-            print("BankMail: Mail show - current session:", currentMailSession)
-        end
-
-        -- Ensure we have character data before proceeding
-        if not currentRealm or not currentChar then
-            currentRealm = GetRealmName()
-            currentChar = UnitName("player")
-        end
-
-        -- Cancel any existing timer to prevent overlap
-        if mailLoadTimer then
-            mailLoadTimer:Cancel()
-            mailLoadTimer = nil
+            print("BankMail: Mail show - current session:", BankMail_AutoSwitch.currentMailSession)
         end
 
         -- Start mail load process
-        StartMailLoad()
+        BankMail_AutoSwitch:StartMailLoad()
 
         -- Hook UI elements safely
         if not InboxFrame.bmHooked then
@@ -381,7 +240,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
         -- Add a small delay to ensure mail data is fully loaded
         C_Timer.After(0.1, function()
             if MailFrame:IsVisible() then
-                FinishMailLoad()
+                BankMail_AutoSwitch:FinishMailLoad()
             end
         end)
     end
@@ -392,18 +251,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
             print("BankMail: Mail closed - resetting session")
         end
 
-        -- Clean up timers
-        if mailLoadTimer then
-            mailLoadTimer:Cancel()
-            mailLoadTimer = nil
-        end
-
-        -- Reset session state
-        currentMailSession = false
-
-        -- Clear any pending operations
-        if isCollecting then
-            isCollecting = false
-        end
+        -- Reset session state in auto-switch module
+        BankMail_AutoSwitch.currentMailSession = false
     end
 end)
