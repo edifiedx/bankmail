@@ -81,75 +81,21 @@ local function HasUnreadMail()
     return false
 end
 
-
--- Hook the Send Mail tab for right-click
-local function HookSendMailTab()
-    if BankMailDB.debugMode then
-        print("BankMail: Attempting to hook Send Mail tab")
-    end
-
-    if not MailFrameTab2 then
-        print("BankMail: ERROR - MailFrameTab2 not found!")
-        return
-    end
-
-    if not MailFrameTab2.bmHooked then
-        if BankMailDB.debugMode then
-            print("BankMail: Setting up right-click menu")
-        end
-
-        -- Set up for right clicks
-        MailFrameTab2:EnableMouse(true)
-        MailFrameTab2:RegisterForClicks("AnyUp")
-
-        -- Add the right-click handler
-        MailFrameTab2:SetScript("OnMouseDown", function(self, button)
-            if button == "RightButton" then
-                if BankMailDB.debugMode then
-                    print("BankMail: Right click detected!")
-                end
-
-                -- Create menu items
-                local menuFrame = CreateFrame("Frame", "BankMailDropDownMenu", UIParent, "UIDropDownMenuTemplate")
-                -- Rest of menu creation code...
-
-                if BankMailDB.debugMode then
-                    print("BankMail: Menu created")
-                end
-            end
-        end)
-
-        MailFrameTab2.bmHooked = true
-        if BankMailDB.debugMode then
-            print("BankMail: Hook completed")
-        end
-    else
-        if BankMailDB.debugMode then
-            print("BankMail: Tab was already hooked")
-        end
-    end
-end
-
 -- CheckAndSwitchTab function
 local function CheckAndSwitchTab()
-    if BankMailDB.debugMode then
-        print("BankMail: CheckAndSwitchTab called")
-        print("BankMail: Current Session:", currentMailSession)
-        print("BankMail: Mail Frame Visible:", MailFrame:IsVisible())
-        print("BankMail: Has Unread Mail:", HasUnreadMail())
+    -- Validate requirements before proceeding
+    if not BankMailDB or not BankMailDB.enabled then
+        return
     end
 
-    if not BankMailDB.enabled then
+    if not currentRealm or not currentChar then
         if BankMailDB.debugMode then
-            print("BankMail: Addon is disabled")
+            print("BankMail: Missing character data, aborting tab switch")
         end
         return
     end
 
-    if not currentMailSession then
-        if BankMailDB.debugMode then
-            print("BankMail: Already in current session, skipping switch")
-        end
+    if not MailFrame:IsVisible() then
         return
     end
 
@@ -167,19 +113,27 @@ local function CheckAndSwitchTab()
         return
     end
 
+    -- Set up new timer with error handling
     mailLoadTimer = C_Timer.NewTimer(0.3, function()
-        if MailFrame:IsVisible() then
-            if not HasUnreadMail() then
+        if not MailFrame:IsVisible() then return end
+
+        if not HasUnreadMail() then
+            -- Ensure the UI elements exist before trying to use them
+            if MailFrameTab2 and SendMailNameEditBox then
                 MailFrameTab2:Click()
 
                 -- Auto-fill recipient if one is set
                 local recipient = GetDefaultRecipient()
-                if recipient and SendMailNameEditBox and SendMailNameEditBox:GetText() == "" then
+                if recipient and SendMailNameEditBox:GetText() == "" then
                     SendMailNameEditBox:SetText(recipient)
-                    SendMailSubjectEditBox:SetFocus()
+                    -- Add delay before focusing subject box
+                    C_Timer.After(0.1, function()
+                        if SendMailSubjectEditBox then
+                            SendMailSubjectEditBox:SetFocus()
+                        end
+                    end)
                 end
 
-                -- Set session flag after first switch
                 currentMailSession = true
             end
         end
@@ -356,26 +310,110 @@ local function HookInboxButtons()
 end
 
 -- Event handler
+-- Event handler with proper initialization and error handling
 frame:SetScript("OnEvent", function(self, event, ...)
-    if BankMailDB.debugMode then
+    local arg1 = ...
+
+    if BankMailDB and BankMailDB.debugMode then
         print("BankMail: Event fired:", event)
     end
 
+    -- Handle addon initialization
+    if event == "ADDON_LOADED" and arg1 == addonName then
+        -- Initialize database with defaults
+        if not BankMailDB then
+            BankMailDB = defaults
+        else
+            -- Merge any missing defaults while preserving existing settings
+            for k, v in pairs(defaults) do
+                if BankMailDB[k] == nil then
+                    BankMailDB[k] = v
+                end
+            end
+        end
+
+        -- Initialize saved variables that might be nil
+        BankMailDB.characterRecipients = BankMailDB.characterRecipients or {}
+
+        if BankMailDB.debugMode then
+            print("BankMail: Database initialized")
+        end
+    end
+
+    -- Handle player login - initialize character data
     if event == "PLAYER_LOGIN" then
-        BankMail_Money:Init()
-    elseif event == "MAIL_SHOW" then
+        -- Initialize character and realm data
+        currentRealm = GetRealmName()
+        currentChar = UnitName("player")
+
+        if BankMailDB.debugMode then
+            print("BankMail: Logged in as", currentChar, "on", currentRealm)
+        end
+
+        -- Initialize money module after character data is available
+        if BankMail_Money and BankMail_Money.Init then
+            BankMail_Money:Init()
+        else
+            print("BankMail: Warning - Money module not found")
+        end
+    end
+
+    -- Handle mail window opening
+    if event == "MAIL_SHOW" then
         if BankMailDB.debugMode then
             print("BankMail: Mail show - current session:", currentMailSession)
         end
+
+        -- Ensure we have character data before proceeding
+        if not currentRealm or not currentChar then
+            currentRealm = GetRealmName()
+            currentChar = UnitName("player")
+        end
+
+        -- Cancel any existing timer to prevent overlap
+        if mailLoadTimer then
+            mailLoadTimer:Cancel()
+            mailLoadTimer = nil
+        end
+
+        -- Start mail load process
         StartMailLoad()
-        HookInboxButtons()
-        HookSendMailTab()
-    elseif event == "MAIL_INBOX_UPDATE" then
-        FinishMailLoad()
-    elseif event == "MAIL_CLOSED" then
+
+        -- Hook UI elements safely
+        if not InboxFrame.bmHooked then
+            HookInboxButtons()
+            InboxFrame.bmHooked = true
+        end
+    end
+
+    -- Handle mail inbox updates
+    if event == "MAIL_INBOX_UPDATE" then
+        -- Add a small delay to ensure mail data is fully loaded
+        C_Timer.After(0.1, function()
+            if MailFrame:IsVisible() then
+                FinishMailLoad()
+            end
+        end)
+    end
+
+    -- Handle mail window closing
+    if event == "MAIL_CLOSED" then
         if BankMailDB.debugMode then
             print("BankMail: Mail closed - resetting session")
         end
+
+        -- Clean up timers
+        if mailLoadTimer then
+            mailLoadTimer:Cancel()
+            mailLoadTimer = nil
+        end
+
+        -- Reset session state
         currentMailSession = false
+
+        -- Clear any pending operations
+        if isCollecting then
+            isCollecting = false
+        end
     end
 end)
