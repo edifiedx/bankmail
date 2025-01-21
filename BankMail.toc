@@ -1,0 +1,9 @@
+## Interface: 11505
+## Title: BankMail
+## Notes: Auto select bank character as mail recipient, collect mail easier.
+## SavedVariables: BankMailDB
+## Version: 0.6
+
+BankMail_Money.lua
+BankMail_Options.lua
+BankMail.lua
