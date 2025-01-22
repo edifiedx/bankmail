@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.9.2] - (2025-01-22)
+
+- Fixed an issue where the options panel wouldn't save
+
 ## [0.9.1] - (2025-01-22)
 
 - Release workflow tweaks

@@ -11,6 +11,7 @@ local addonName = "BankMail"
 
 local BankMail_Money = _G[addonName .. "_Money"]
 local BankMail_AutoSwitch = _G[addonName .. "_AutoSwitch"]
+local BankMail_Options = _G[addonName .. "_Options"]
 
 -- Update default settings
 local defaults = {
@@ -20,16 +21,6 @@ local defaults = {
     debugMode = false,
     disableAutoSwitchOnBank = true -- Default to true since it's likely desired behavior
 }
-
--- Function to set account-wide default recipient
-local function SetAccountDefaultRecipient(recipient)
-    -- If recipient doesn't include a realm, append current realm
-    if not recipient:find("-") then
-        recipient = recipient .. "-" .. GetRealmName()
-    end
-    BankMailDB.accountDefaultRecipient = recipient
-    print("BankMail: Account-wide default recipient set to: " .. recipient)
-end
 
 -- Function to set character-specific default recipient
 local function SetCharacterDefaultRecipient(recipient)
@@ -138,7 +129,7 @@ local function HandleSlashCommand(msg)
             BankMailDB.accountDefaultRecipient = nil
             print("BankMail: Cleared account-wide default recipient")
         else
-            SetAccountDefaultRecipient(arg)
+            BankMail_Options.SetAccountDefaultRecipient(arg)
         end
     elseif command == "setcharacter" or command == "sc" then
         if arg == "" then
