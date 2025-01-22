@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.9.1] - (2025-01-22)
+
+- Release workflow tweaks
+
 ## [0.9.0] - (2025-01-22)
 
 - Added player support to coin collection
