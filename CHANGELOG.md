@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.8.2] - (2025-01-22)
+
+- Removed deploy script from package
+
 ## [0.8.1] - (2025-01-22)
 
 - Fixed an issue with autofill not triggering without AutoSwitch

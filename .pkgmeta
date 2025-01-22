@@ -6,6 +6,7 @@ ignore:
   - .gitignore
   - .git
   - .github
+  - deploy.ps1
 
 manual-changelog:
   filename: CHANGELOG.md
