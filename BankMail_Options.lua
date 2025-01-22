@@ -1,3 +1,5 @@
+print("Loading Options, BankMailDB exists:", BankMailDB ~= nil)
+
 local addonName = "BankMail"
 local Options = {
     Panel = CreateFrame("Frame")
@@ -105,7 +107,7 @@ function Options.Show(self)
         if not BankMailDB then BankMailDB = {} end
         BankMailDB.enabled = BankMailDB.enabled ~= nil and BankMailDB.enabled or true
         BankMailDB.disableAutoSwitchOnBank = BankMailDB.disableAutoSwitchOnBank ~= nil and
-        BankMailDB.disableAutoSwitchOnBank or true
+            BankMailDB.disableAutoSwitchOnBank or true
         BankMailDB.debugMode = BankMailDB.debugMode ~= nil and BankMailDB.debugMode or false
 
         enableAddon:SetChecked(BankMailDB.enabled)

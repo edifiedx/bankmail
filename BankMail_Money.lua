@@ -1,3 +1,5 @@
+print("Loading Money, BankMailDB exists:", BankMailDB ~= nil)
+
 -- Create the module
 local addonName = "BankMail"
 local BankMail_Money = {

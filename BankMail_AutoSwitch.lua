@@ -52,6 +52,33 @@ local function HasUnreadMail()
     return false
 end
 
+-- Function to auto-fill recipient
+function AutoSwitch:AutoFillRecipient()
+    if not BankMailDB.enabled then return end
+
+    -- Check if we should disable auto-fill for bank character
+    if BankMailDB.disableAutoSwitchOnBank and IsCurrentCharacterBank() then
+        if BankMailDB.debugMode then
+            print("BankMail: Auto-fill disabled for bank character")
+        end
+        return
+    end
+
+    -- Only auto-fill if the recipient field is empty
+    if SendMailNameEditBox and SendMailNameEditBox:GetText() == "" then
+        local recipient = self:GetDefaultRecipient()
+        if recipient then
+            SendMailNameEditBox:SetText(recipient)
+            -- Add delay before focusing subject box
+            C_Timer.After(0.1, function()
+                if SendMailSubjectEditBox then
+                    SendMailSubjectEditBox:SetFocus()
+                end
+            end)
+        end
+    end
+end
+
 -- CheckAndSwitchTab function
 function AutoSwitch:CheckAndSwitchTab()
     -- Validate requirements before proceeding
@@ -90,26 +117,26 @@ function AutoSwitch:CheckAndSwitchTab()
 
         if not HasUnreadMail() then
             -- Ensure the UI elements exist before trying to use them
-            if MailFrameTab2 and SendMailNameEditBox then
+            if MailFrameTab2 then
                 MailFrameTab2:Click()
-
-                -- Auto-fill recipient if one is set
-                local recipient = self:GetDefaultRecipient()
-                if recipient and SendMailNameEditBox:GetText() == "" then
-                    SendMailNameEditBox:SetText(recipient)
-                    -- Add delay before focusing subject box
-                    C_Timer.After(0.1, function()
-                        if SendMailSubjectEditBox then
-                            SendMailSubjectEditBox:SetFocus()
-                        end
-                    end)
-                end
-
+                self:AutoFillRecipient()
                 self.currentMailSession = true
             end
         end
         self.mailLoadTimer = nil
     end)
+end
+
+-- Hook the SendMail button to auto-fill after sending
+local function HookSendMailButton()
+    if SendMailMailButton then
+        SendMailMailButton:HookScript("OnClick", function()
+            -- Add a short delay to allow the mail to be sent
+            C_Timer.After(0.5, function()
+                AutoSwitch:AutoFillRecipient()
+            end)
+        end)
+    end
 end
 
 -- Update the StartMailLoad and FinishMailLoad functions
@@ -146,6 +173,18 @@ function AutoSwitch:Init()
     -- Initialize character and realm data
     currentRealm = GetRealmName()
     currentChar = UnitName("player")
+
+    -- Hook the send mail button
+    HookSendMailButton()
+
+    -- Hook the mail tab buttons to ensure auto-fill happens when manually switching tabs
+    if MailFrameTab2 then
+        MailFrameTab2:HookScript("OnClick", function()
+            C_Timer.After(0.1, function()
+                AutoSwitch:AutoFillRecipient()
+            end)
+        end)
+    end
 
     if BankMailDB.debugMode then
         print("BankMail AutoSwitch: Initialized for", currentChar, "on", currentRealm)
