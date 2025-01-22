@@ -70,16 +70,22 @@ jobs:
           git checkout main
           git pull origin main
           
-          # Make our change
-          sed -i "s/## Version: .*$/## Version: ${{ needs.process-version.outputs.version }}/" BankMail.toc
-          
-          # Set up remote with token for authentication
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          
-          # Commit and push
-          git add BankMail.toc
-          git commit -m "Update .toc to version ${{ needs.process-version.outputs.version }}"
-          git push origin main
+          # Check if version already matches
+          CURRENT_VERSION=$(grep "## Version:" BankMail.toc | sed -E 's/## Version: (.*)/\1/')
+          if [ "$CURRENT_VERSION" != "${{ needs.process-version.outputs.version }}" ]; then
+            # Make our change
+            sed -i "s/## Version: .*$/## Version: ${{ needs.process-version.outputs.version }}/" BankMail.toc
+            
+            # Set up remote with token for authentication
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            
+            # Commit and push
+            git add BankMail.toc
+            git commit -m "Update .toc to version ${{ needs.process-version.outputs.version }}"
+            git push origin main
+          else
+            echo "Version in .toc already matches ${{ needs.process-version.outputs.version }}, skipping update"
+          fi
 
   create-release:
     needs: [process-version, update-files]
