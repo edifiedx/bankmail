@@ -1,5 +1,3 @@
-print("Loading Money, BankMailDB exists:", BankMailDB ~= nil)
-
 -- Create the module
 local addonName = "BankMail"
 local BankMail_Money = {
@@ -9,54 +7,91 @@ _G[addonName .. "_Money"] = BankMail_Money
 
 -- Local variables
 local isCollecting = false
-local auctionTotal = 0
+local moneyCollected = {}
 
--- Function to collect auction money
-function BankMail_Money:ProcessAuctionMail()
+-- Helper function to group money by sender
+local function GetMoneyBySender()
+    local moneyGroups = {}
+    local numItems = GetInboxNumItems()
+
+    for i = 1, numItems do
+        local _, sender, senderName, subject, money = GetInboxHeaderInfo(i)
+        if money and money > 0 then
+            -- Determine the category
+            local category
+            if subject and subject:find("Auction successful:") then
+                category = "Auction"
+            else
+                -- Use senderName if available, fall back to sender, then to "Unknown"
+                category = senderName or sender or "Unknown Sender"
+                -- If the sender is a number (likely a GUID), use "Unknown Sender"
+                if tonumber(category) then
+                    category = "Unknown Sender"
+                end
+            end
+
+            -- Initialize or update the category
+            moneyGroups[category] = (moneyGroups[category] or 0) + money
+        end
+    end
+
+    return moneyGroups
+end
+
+-- Function to collect all money
+function BankMail_Money:ProcessAllMoney()
     if isCollecting then return end
 
     isCollecting = true
     local numItems = GetInboxNumItems()
-    local foundAuctions = false
+    local foundMoney = false
+    moneyCollected = {} -- Reset collection totals
 
     for i = 1, numItems do
-        local _, _, _, subject, money = GetInboxHeaderInfo(i)
+        local _, sender, _, subject, money = GetInboxHeaderInfo(i)
+        if money and money > 0 then
+            foundMoney = true
+            -- Track money by category
+            local category = (subject and subject:find("Auction successful:")) and "Auction" or (sender or "Unknown")
+            moneyCollected[category] = (moneyCollected[category] or 0) + money
 
-        if subject and subject:find("Auction successful:") and money and money > 0 then
-            foundAuctions = true
-            auctionTotal = auctionTotal + money
             TakeInboxMoney(i)
 
             -- Add a small delay before continuing to next mail
             C_Timer.After(0.5, function()
                 isCollecting = false
-                self:ProcessAuctionMail()
+                self:ProcessAllMoney()
             end)
             return -- Exit this iteration and wait for next timer
         end
     end
 
-    -- Print final total only when we've finished processing all mails
-    if foundAuctions then
-        print("BankMail - Total Collected: " .. C_CurrencyInfo.GetCoinTextureString(auctionTotal))
-        auctionTotal = 0
-    end
-    isCollecting = false
-end
+    -- Print final totals only when we've finished processing all mails
+    if foundMoney then
+        -- Print individual categories
+        for category, amount in pairs(moneyCollected) do
+            if category == "Auction" then
+                print("BankMail - Auction Money Collected: " .. C_CurrencyInfo.GetCoinTextureString(amount))
+            else
+                print("BankMail - Collected from " .. category .. ": " .. C_CurrencyInfo.GetCoinTextureString(amount))
+            end
+        end
 
--- Function to scan for pending auction money
-function BankMail_Money:GetPendingAuctionMoney()
-    local total = 0
-    local numItems = GetInboxNumItems()
+        -- Print total if multiple categories exist
+        local categories = 0
+        for _ in pairs(moneyCollected) do categories = categories + 1 end
 
-    for i = 1, numItems do
-        local _, _, _, subject, money = GetInboxHeaderInfo(i)
-        if subject and subject:find("Auction successful:") and money and money > 0 then
-            total = total + money
+        if categories > 1 then
+            local total = 0
+            for _, amount in pairs(moneyCollected) do
+                total = total + amount
+            end
+            print("BankMail - Total Collected: " .. C_CurrencyInfo.GetCoinTextureString(total))
         end
     end
 
-    return total
+    moneyCollected = {}
+    isCollecting = false
 end
 
 function BankMail_Money:CreateCollectionButton()
@@ -88,19 +123,61 @@ function BankMail_Money:CreateCollectionButton()
         button:SetPoint("BOTTOM", InboxFrame, "BOTTOM", HORIZONTAL_SHIFT, BUTTON_OFFSET_Y)
     end
 
-    -- Add debug print
-    print("BankMail: Created collection button")
-
-    -- Rest of the button setup...
+    -- Add tooltip
     button:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        local pendingMoney = BankMail_Money:GetPendingAuctionMoney()
-        if pendingMoney > 0 then
-            GameTooltip:AddLine("Pending auction coin:")
-            GameTooltip:AddLine(C_CurrencyInfo.GetCoinTextureString(pendingMoney), 1, 1, 1)
-        else
-            GameTooltip:AddLine("No auction coins to collect")
+
+        local moneyGroups = GetMoneyBySender()
+        local hasMultipleCategories = false
+        local total = 0
+        local categoryCount = 0
+
+        -- Count categories and calculate total
+        for _, amount in pairs(moneyGroups) do
+            total = total + amount
+            categoryCount = categoryCount + 1
         end
+
+        hasMultipleCategories = categoryCount > 1
+
+        -- Show total first if there are multiple categories
+        if hasMultipleCategories then
+            GameTooltip:AddLine("Pending total coin:", 1, 0.82, 0) -- Golden color
+            GameTooltip:AddLine(C_CurrencyInfo.GetCoinTextureString(total), 1, 1, 1)
+            GameTooltip:AddLine(" ")                               -- Empty line for spacing
+        end
+
+        -- Show auction money if it exists
+        if moneyGroups["Auction"] then
+            GameTooltip:AddLine("Pending auction coin:", nil, nil, nil, true)
+            GameTooltip:AddLine(C_CurrencyInfo.GetCoinTextureString(moneyGroups["Auction"]), 1, 1, 1, true)
+            if next(moneyGroups) ~= nil then -- If there are other categories
+                GameTooltip:AddLine(" ")     -- Empty line for spacing
+            end
+            moneyGroups["Auction"] = nil     -- Remove so we don't show it again
+        end
+
+        -- Show other categories
+        for sender, amount in pairs(moneyGroups) do
+            if amount > 0 then
+                -- Try to get a proper name if it's a number (likely a GUID)
+                local displayName = sender
+                if tonumber(sender) then
+                    displayName = "Unknown Sender"
+                end
+                GameTooltip:AddLine("Pending " .. displayName .. " coin:", nil, nil, nil, true)
+                GameTooltip:AddLine(C_CurrencyInfo.GetCoinTextureString(amount), 1, 1, 1, true)
+                if next(moneyGroups, sender) ~= nil then -- If there are more categories after this
+                    GameTooltip:AddLine(" ")             -- Empty line for spacing
+                end
+            end
+        end
+
+        -- If no money at all, show that
+        if total == 0 then
+            GameTooltip:AddLine("No pending coin")
+        end
+
         GameTooltip:Show()
     end)
 
@@ -109,8 +186,11 @@ function BankMail_Money:CreateCollectionButton()
     end)
 
     button:SetScript("OnClick", function()
-        BankMail_Money:ProcessAuctionMail()
+        BankMail_Money:ProcessAllMoney()
     end)
+
+    -- Add debug print
+    print("BankMail: Created collection button")
 end
 
 -- Initialize module
