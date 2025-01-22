@@ -61,13 +61,18 @@ jobs:
       
       - name: Update .toc version
         run: |
+          # Fetch latest changes
+          git fetch origin main
+          # Reset to latest main
+          git reset --hard origin/main
+          
+          # Make our change
           sed -i "s/## Version: .*$/## Version: ${{ needs.process-version.outputs.version }}/" BankMail.toc
-      
-      - name: Commit .toc update
-        run: |
+          
+          # Commit and push with force-with-lease for safety
           git add BankMail.toc
           git commit -m "Update .toc to version ${{ needs.process-version.outputs.version }}"
-          git push
+          git push --force-with-lease origin main
 
   create-release:
     needs: [process-version, update-files]
