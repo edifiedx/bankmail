@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Configure Git
         run: |
@@ -53,26 +54,32 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
       
       - name: Configure Git
         run: |
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-      
+
       - name: Update .toc version
         run: |
-          # Fetch latest changes
+          # Ensure we're on the latest main
           git fetch origin main
-          # Reset to latest main
-          git reset --hard origin/main
+          git checkout main
+          git pull origin main
           
           # Make our change
           sed -i "s/## Version: .*$/## Version: ${{ needs.process-version.outputs.version }}/" BankMail.toc
           
-          # Commit and push with force-with-lease for safety
+          # Set up remote with token for authentication
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          
+          # Commit and push
           git add BankMail.toc
           git commit -m "Update .toc to version ${{ needs.process-version.outputs.version }}"
-          git push --force-with-lease origin main
+          git push origin main
 
   create-release:
     needs: [process-version, update-files]
@@ -85,11 +92,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Configure Git
         run: |
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
       
       - name: Create tag
         run: |
@@ -107,6 +116,7 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: "v${{ needs.process-version.outputs.version }}"
           name: "Version ${{ needs.process-version.outputs.version }}"
           body: "${{ steps.changelog.outputs.CHANGELOG_ENTRY }}"
