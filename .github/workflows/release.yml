@@ -55,8 +55,8 @@ jobs:
       
       - name: Commit .toc update
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add BankMail.toc
           git commit -m "Update .toc to version ${{ needs.process-version.outputs.version }}"
           git push
@@ -73,6 +73,11 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Configure Git
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
       - name: Create tag
         run: |
           git tag -a "v${{ needs.process-version.outputs.version }}" -m "Version ${{ needs.process-version.outputs.version }}"
