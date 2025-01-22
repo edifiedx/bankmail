@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.8.1] - (2025-01-22)
+
+- Fixed an issue with autofill not triggering without AutoSwitch
+
 ## [0.8.0] - (2025-01-21)
 
 - Extracted auto-switch functionality into new BankMail_AutoSwitch module
