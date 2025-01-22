@@ -21,6 +21,11 @@ jobs:
         with:
           fetch-depth: 2
       
+      - name: Configure Git
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+      
       - name: Extract latest version from changelog
         id: extract-version
         run: |
@@ -49,14 +54,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Configure Git
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+      
       - name: Update .toc version
         run: |
           sed -i "s/## Version: .*$/## Version: ${{ needs.process-version.outputs.version }}/" BankMail.toc
       
       - name: Commit .toc update
         run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
           git add BankMail.toc
           git commit -m "Update .toc to version ${{ needs.process-version.outputs.version }}"
           git push
@@ -75,9 +83,9 @@ jobs:
       
       - name: Configure Git
         run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+      
       - name: Create tag
         run: |
           git tag -a "v${{ needs.process-version.outputs.version }}" -m "Version ${{ needs.process-version.outputs.version }}"
