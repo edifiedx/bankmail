@@ -1,0 +1,103 @@
+name: Release Management
+
+on:
+  push:
+    paths:
+      - 'CHANGELOG.md'
+    branches:
+      - main
+
+jobs:
+  process-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+      should_release: ${{ steps.check-release.outputs.should_release }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Extract latest version from changelog
+        id: extract-version
+        run: |
+          VERSION=$(grep -m 1 '## \[.*\]' CHANGELOG.md | sed -E 's/## \[(.*)\].*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+
+      - name: Check if release already exists
+        id: check-release
+        run: |
+          if ! git ls-remote --tags origin | grep -q "refs/tags/v${{ steps.extract-version.outputs.version }}"; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "No existing release found, will create new release"
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "Release already exists, skipping"
+          fi
+
+  update-files:
+    needs: process-version
+    if: needs.process-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Update .toc version
+        run: |
+          sed -i "s/## Version: .*$/## Version: ${{ needs.process-version.outputs.version }}/" BankMail.toc
+      
+      - name: Commit .toc update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add BankMail.toc
+          git commit -m "Update .toc to version ${{ needs.process-version.outputs.version }}"
+          git push
+
+  create-release:
+    needs: [process-version, update-files]
+    if: needs.process-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Create tag
+        run: |
+          git tag -a "v${{ needs.process-version.outputs.version }}" -m "Version ${{ needs.process-version.outputs.version }}"
+          git push origin "v${{ needs.process-version.outputs.version }}"
+
+      - name: Extract changelog entry
+        id: changelog
+        run: |
+          CHANGELOG_ENTRY=$(awk '/^## \[.*\]/{p=NR+1}(NR<=p){print}' CHANGELOG.md | tail -n +2)
+          echo "CHANGELOG_ENTRY<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_ENTRY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v${{ needs.process-version.outputs.version }}"
+          name: "Version ${{ needs.process-version.outputs.version }}"
+          body: "${{ steps.changelog.outputs.CHANGELOG_ENTRY }}"
+          draft: false
+          prerelease: false
+          files: |
+            BankMail.lua
+            BankMail.toc
+            BankMail_AutoSwitch.lua
+            BankMail_Money.lua
+            BankMail_Options.lua
+            CHANGELOG.md
