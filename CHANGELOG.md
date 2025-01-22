@@ -1,5 +1,10 @@
 # BankMail Changelog
 
+## [0.9.0] - (2025-01-22)
+
+- Added player support to coin collection
+- Coin tooltip tweaks
+
 ## [0.8.2] - (2025-01-22)
 
 - Removed deploy script from package
