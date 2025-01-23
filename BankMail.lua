@@ -121,7 +121,9 @@ local function HandleSlashCommand(msg)
     local command, arg = msg:match("^(%S*)%s*(.-)$")
     command = command:lower()
 
-    if command == "toggle" then
+    if command == "config" or command == "options" then
+        Settings.OpenToCategory(BankMail_Options.Category:GetID())
+    elseif command == "toggle" then
         BankMailDB.enabled = not BankMailDB.enabled
         print("BankMail: " .. (BankMailDB.enabled and "Enabled" or "Disabled"))
     elseif command == "set" then
@@ -152,9 +154,10 @@ local function HandleSlashCommand(msg)
     else
         print("BankMail commands:")
         print("/bank toggle - Enable/disable automatic tab switching")
-        print("/bank set CharacterName - Set account-wide default recipient (use empty to clear)")
-        print("/bank setcharacter CharacterName - Set character-specific default recipient (use empty to clear)")
+        print("/bank set <CharacterName> - Set account-wide default recipient (use empty to clear)")
+        print("/bank setchar <CharacterName> - Set character-specific default recipient (use empty to clear)")
         print("/bank show - Show current recipient settings")
+        print("/bank config - Shortcut to options panel")
     end
 end
 
