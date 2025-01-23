@@ -19,7 +19,9 @@ local defaults = {
     accountDefaultRecipient = nil,
     characterRecipients = {},
     debugMode = false,
-    disableAutoSwitchOnBank = true -- Default to true since it's likely desired behavior
+    enableAutoSwitchOnBank = false,
+    enableCoinSubject = true
+
 }
 
 -- Function to set character-specific default recipient

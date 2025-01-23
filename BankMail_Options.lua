@@ -154,14 +154,23 @@ function Options.Show(self)
         self.enableAddon = enableAddon
 
         -- Add remaining checkboxes...
-        local disableAutoSwitch = checkbox("Disable Auto-Switch for Bank Character",
-            "Disable automatic tab switching when on the bank character",
+        local enableAutoSwitch = checkbox("Enable Auto-Switch on Bank Character",
+            "Enable automatic tab switching when on the bank character",
             function(_, checked)
                 if not BankMailDB then BankMailDB = {} end
-                BankMailDB.disableAutoSwitchOnBank = checked
-                print("BankMail: Auto-switch for bank character " .. (checked and "disabled" or "enabled"))
+                BankMailDB.enableAutoSwitchOnBank = checked
+                print("BankMail: Auto-switch for bank character " .. (checked and "enabled" or "disabled"))
             end)
-        disableAutoSwitch:SetPoint("TOPLEFT", bankCharInput, "BOTTOMLEFT", -2, -8)
+        enableAutoSwitch:SetPoint("TOPLEFT", bankCharInput, "BOTTOMLEFT", -2, -8)
+
+        local enableCoinSubject = checkbox("Enable Coin Subject Auto-fill",
+            "Enable automatic subject filling when attaching money",
+            function(_, checked)
+                if not BankMailDB then BankMailDB = {} end
+                BankMailDB.enableCoinSubject = checked
+                print("BankMail: Coin subject auto-fill " .. (checked and "enabled" or "disabled"))
+            end)
+        enableCoinSubject:SetPoint("TOPLEFT", enableAutoSwitch, "BOTTOMLEFT", 0, -8)
 
         local debugMode = checkbox("Debug Mode",
             "Enable debug logging",
@@ -170,23 +179,27 @@ function Options.Show(self)
                 BankMailDB.debugMode = checked
                 print("BankMail: Debug mode " .. (checked and "enabled" or "disabled"))
             end)
-        debugMode:SetPoint("TOPLEFT", disableAutoSwitch, "BOTTOMLEFT", 0, -8)
+        debugMode:SetPoint("TOPLEFT", enableCoinSubject, "BOTTOMLEFT", 0, -8)
 
-        self.disableAutoSwitch = disableAutoSwitch
+        self.enableAutoSwitch = enableAutoSwitch
+        self.enableCoinSubject = enableCoinSubject
         self.debugMode = debugMode
         self.initialized = true
     end
 
     -- Update values
     if not BankMailDB then BankMailDB = {} end
-    BankMailDB.enabled = BankMailDB.enabled ~= nil and BankMailDB.enabled or true
-    BankMailDB.disableAutoSwitchOnBank = BankMailDB.disableAutoSwitchOnBank ~= nil and
-        BankMailDB.disableAutoSwitchOnBank or true
-    BankMailDB.debugMode = BankMailDB.debugMode ~= nil and BankMailDB.debugMode or false
+    -- Initialize with defaults if not set
+    if BankMailDB.enabled == nil then BankMailDB.enabled = true end
+    if BankMailDB.enableAutoSwitchOnBank == nil then BankMailDB.enableAutoSwitchOnBank = false end
+    if BankMailDB.enableCoinSubject == nil then BankMailDB.enableCoinSubject = true end
+    if BankMailDB.debugMode == nil then BankMailDB.debugMode = false end
 
+    -- Update UI to match current values
     self.enableAddon:SetChecked(BankMailDB.enabled)
     self.bankCharInput:SetText(BankMailDB.accountDefaultRecipient or "")
-    self.disableAutoSwitch:SetChecked(BankMailDB.disableAutoSwitchOnBank)
+    self.enableAutoSwitch:SetChecked(BankMailDB.enableAutoSwitchOnBank)
+    self.enableCoinSubject:SetChecked(BankMailDB.enableCoinSubject)
     self.debugMode:SetChecked(BankMailDB.debugMode)
 end
 
