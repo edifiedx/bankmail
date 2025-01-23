@@ -1,5 +1,10 @@
 # BankMail Changelog
 
+## [0.9.3] - (2025-01-22)
+
+- Fixed an issue where the options panel wouldn't open
+- Added `/bank config` command to open panel directly
+
 ## [0.9.2] - (2025-01-22)
 
 - Fixed an issue where the options panel wouldn't save
