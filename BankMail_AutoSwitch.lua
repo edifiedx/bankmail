@@ -57,7 +57,7 @@ function AutoSwitch:AutoFillRecipient()
     if not BankMailDB.enabled then return end
 
     -- Check if we should disable auto-fill for bank character
-    if BankMailDB.disableAutoSwitchOnBank and IsCurrentCharacterBank() then
+    if not BankMailDB.enableAutoSwitchOnBank and IsCurrentCharacterBank() then
         if BankMailDB.debugMode then
             print("BankMail: Auto-fill disabled for bank character")
         end
@@ -79,7 +79,7 @@ function AutoSwitch:AutoFillRecipient()
     end
 end
 
--- Helper function to format copper money as gold silver copper text
+-- Function to format money amount as text
 local function FormatMoneyText(copper)
     if not copper or copper == 0 then return "0c" end
 
@@ -97,7 +97,7 @@ end
 
 -- Function to auto-fill subject when money is attached
 local function AutoFillMoneySubject()
-    if not BankMailDB.enabled then return end
+    if not BankMailDB or not BankMailDB.enabled or BankMailDB.enableCoinSubject == false then return end
 
     local currentSubject = SendMailSubjectEditBox:GetText()
     -- Proceed if subject is empty or matches our coin format
@@ -157,18 +157,6 @@ function AutoSwitch:CheckAndSwitchTab()
     end)
 end
 
--- Hook the SendMail button to auto-fill after sending
-local function HookSendMailButton()
-    if SendMailMailButton then
-        SendMailMailButton:HookScript("OnClick", function()
-            -- Add a short delay to allow the mail to be sent
-            C_Timer.After(0.5, function()
-                AutoSwitch:AutoFillRecipient()
-            end)
-        end)
-    end
-end
-
 -- Update the StartMailLoad and FinishMailLoad functions
 function AutoSwitch:StartMailLoad()
     if BankMailDB.debugMode then
@@ -204,9 +192,6 @@ function AutoSwitch:Init()
     currentRealm = GetRealmName()
     currentChar = UnitName("player")
 
-    -- Hook the send mail button
-    HookSendMailButton()
-
     -- Hook the mail tab buttons to ensure auto-fill happens when manually switching tabs
     if MailFrameTab2 then
         MailFrameTab2:HookScript("OnClick", function()
@@ -216,6 +201,7 @@ function AutoSwitch:Init()
         end)
     end
 
+    -- Hook money input fields for subject autofill
     if SendMailMoneyGold then
         SendMailMoneyGold:HookScript("OnTextChanged", AutoFillMoneySubject)
     end
