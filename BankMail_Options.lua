@@ -84,12 +84,7 @@ function Options.Show(self)
 
         local bg = bankCharInput:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(0.03, 0.03, 0.03, 0.5)
-
-        local border = bankCharInput:CreateTexture("Frame", nil)
-        border:SetPoint("TOPLEFT", -1, 1)
-        border:SetPoint("BOTTOMRIGHT", 1, -1)
-        border:SetColorTexture(0.03, 0.03, 0.03, 1)
+        bg:SetColorTexture(0.03, 0.03, 0.03, 0.75)
 
         -- Setup autocomplete
         bankCharInput:SetHyperlinksEnabled(false)
