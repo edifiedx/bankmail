@@ -1,5 +1,11 @@
 # BankMail Changelog
 
+## [0.10.0] - (2025-01-23)
+
+- Added automatic subject line for mails with money attachments
+- Money mails use format "coin: Xg Ys Zc"
+- Subject updates automatically as money amounts change
+
 ## [0.9.3] - (2025-01-22)
 
 - Fixed an issue where the options panel wouldn't open
