@@ -114,7 +114,7 @@ jobs:
       - name: Extract changelog entry
         id: changelog
         run: |
-          CHANGELOG_ENTRY=$(awk '/^## \[.*\]/{p=NR+1}(NR<=p){print}' CHANGELOG.md | tail -n +2)
+          CHANGELOG_ENTRY=$(awk '/^## \['"${{ needs.process-version.outputs.version }}"'\]/{p=1;next} /^## \[/{p=0} p' CHANGELOG.md)
           echo "CHANGELOG_ENTRY<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG_ENTRY" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
