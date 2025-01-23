@@ -79,6 +79,36 @@ function AutoSwitch:AutoFillRecipient()
     end
 end
 
+-- Helper function to format copper money as gold silver copper text
+local function FormatMoneyText(copper)
+    if not copper or copper == 0 then return "0c" end
+
+    local gold = math.floor(copper / 10000)
+    local silver = math.floor((copper % 10000) / 100)
+    local remainingCopper = copper % 100
+
+    local parts = {}
+    if gold > 0 then table.insert(parts, gold .. "g") end
+    if silver > 0 then table.insert(parts, silver .. "s") end
+    if remainingCopper > 0 then table.insert(parts, remainingCopper .. "c") end
+
+    return table.concat(parts, " ")
+end
+
+-- Function to auto-fill subject when money is attached
+local function AutoFillMoneySubject()
+    if not BankMailDB.enabled then return end
+
+    local currentSubject = SendMailSubjectEditBox:GetText()
+    -- Proceed if subject is empty or matches our coin format
+    if currentSubject ~= "" and not currentSubject:match("^coin: .*[gsc]$") then return end
+
+    local moneyAmount = MoneyInputFrame_GetCopper(SendMailMoney)
+    if moneyAmount and moneyAmount > 0 then
+        SendMailSubjectEditBox:SetText("coin: " .. FormatMoneyText(moneyAmount))
+    end
+end
+
 -- CheckAndSwitchTab function
 function AutoSwitch:CheckAndSwitchTab()
     -- Validate requirements before proceeding
@@ -184,6 +214,16 @@ function AutoSwitch:Init()
                 AutoSwitch:AutoFillRecipient()
             end)
         end)
+    end
+
+    if SendMailMoneyGold then
+        SendMailMoneyGold:HookScript("OnTextChanged", AutoFillMoneySubject)
+    end
+    if SendMailMoneySilver then
+        SendMailMoneySilver:HookScript("OnTextChanged", AutoFillMoneySubject)
+    end
+    if SendMailMoneyCopper then
+        SendMailMoneyCopper:HookScript("OnTextChanged", AutoFillMoneySubject)
     end
 
     if BankMailDB.debugMode then
