@@ -33,7 +33,7 @@ end
 -- Counter for unique checkbox names
 local checkCounter = 0
 
-local function checkbox(label, description, onclick)
+local function checkbox(label, description, tooltip, defaultValue, onclick)
     local check = CreateFrame(
         "CheckButton",
         "BankMailOptCheck" .. checkCounter,
@@ -45,10 +45,21 @@ local function checkbox(label, description, onclick)
         PlaySound(checked and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
         onclick(self, checked and true or false)
     end)
+    check:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(label, 1, 1, 1)
+        GameTooltip:AddLine(description, nil, nil, nil, true)
+        GameTooltip:AddLine(" ") -- Spacer
+        GameTooltip:AddLine(tooltip, 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine(" ") -- Spacer
+        GameTooltip:AddLine("Default: " .. (defaultValue and "Enabled" or "Disabled"), 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+    end)
+    check:SetScript("OnLeave", function(self)
+        GameTooltip:Hide()
+    end)
     check.label = _G[check:GetName() .. "Text"]
     check.label:SetText(label)
-    check.tooltipText = label
-    check.tooltipRequirement = description
     checkCounter = checkCounter + 1
     return check
 end
@@ -61,8 +72,11 @@ function Options.Show(self)
         title:SetText("BankMail Options")
 
         -- Enable/Disable checkbox
-        local enableAddon = checkbox("Enable BankMail",
-            "Enable or disable automatic mail tab switching",
+        local enableAddon = checkbox(
+            "Enable BankMail",
+            "Enable or disable all BankMail features",
+            "When enabled, BankMail will provide automatic mail tab switching, recipient auto-fill, and other quality of life improvements for mail handling.",
+            true, -- Default value
             function(_, checked)
                 BankMailDB.enabled = checked
                 print("BankMail: " .. (checked and "Enabled" or "Disabled"))
@@ -81,6 +95,28 @@ function Options.Show(self)
         bankCharInput:SetFontObject("GameFontHighlight")
         bankCharInput:SetAutoFocus(false)
         bankCharInput:EnableMouse(true)
+
+        -- Add tooltip to bank character input
+        bankCharInput:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine("Default Bank Character", 1, 1, 1)
+            GameTooltip:AddLine(
+                "Set the character that will automatically be filled in as the recipient when sending mail.", nil, nil,
+                nil,
+                true)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine(
+                "You can specify a character from any realm by including the realm name (e.g., CharacterName-RealmName)",
+                0.8,
+                0.8, 0.8, true)
+            GameTooltip:AddLine("If no realm is specified, your current realm will be used.", 0.8, 0.8, 0.8, true)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("Default: None", 0.7, 0.7, 0.7)
+            GameTooltip:Show()
+        end)
+        bankCharInput:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
 
         local bg = bankCharInput:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
@@ -154,8 +190,11 @@ function Options.Show(self)
         self.enableAddon = enableAddon
 
         -- Add remaining checkboxes...
-        local enableAutoSwitch = checkbox("Enable Auto-Switch on Bank Character",
+        local enableAutoSwitch = checkbox(
+            "Enable Auto-Switch on Bank Character",
             "Enable automatic tab switching when on the bank character",
+            "When enabled, BankMail will automatically switch to the Send Mail tab even when you're on your bank character.\n\nWhen disabled (default), your bank character won't automatically switch tabs when checking mail.",
+            false, -- Default value
             function(_, checked)
                 if not BankMailDB then BankMailDB = {} end
                 BankMailDB.enableAutoSwitchOnBank = checked
@@ -163,8 +202,11 @@ function Options.Show(self)
             end)
         enableAutoSwitch:SetPoint("TOPLEFT", bankCharInput, "BOTTOMLEFT", -2, -8)
 
-        local enableCoinSubject = checkbox("Enable Coin Subject Auto-fill",
+        local enableCoinSubject = checkbox(
+            "Enable Coin Subject Auto-fill",
             "Enable automatic subject filling when attaching money",
+            "When enabled, BankMail will automatically set the mail subject when you attach money to a mail.\n\nThe subject will be set to:\n'coin: Xg Ys Zc' and will update as you adjust the amount.",
+            true, -- Default value
             function(_, checked)
                 if not BankMailDB then BankMailDB = {} end
                 BankMailDB.enableCoinSubject = checked
@@ -172,14 +214,70 @@ function Options.Show(self)
             end)
         enableCoinSubject:SetPoint("TOPLEFT", enableAutoSwitch, "BOTTOMLEFT", 0, -8)
 
-        local debugMode = checkbox("Debug Mode",
+        local debugMode = checkbox(
+            "Debug Mode",
             "Enable debug logging",
+            "When enabled, BankMail will print additional information to the chat window to help diagnose issues.\n\nThis should typically be left disabled unless you're troubleshooting a problem.",
+            false, -- Default value
             function(_, checked)
                 if not BankMailDB then BankMailDB = {} end
                 BankMailDB.debugMode = checked
                 print("BankMail: Debug mode " .. (checked and "enabled" or "disabled"))
             end)
         debugMode:SetPoint("TOPLEFT", enableCoinSubject, "BOTTOMLEFT", 0, -8)
+
+        -- Create Restore Defaults button
+        local defaultsButton = CreateFrame("Button", nil, self, "UIPanelButtonTemplate")
+        defaultsButton:SetText("Restore Defaults")
+        defaultsButton:SetSize(120, 22)
+        defaultsButton:SetPoint("TOPLEFT", debugMode, "BOTTOMLEFT", 0, -16)
+        defaultsButton:SetScript("OnClick", function()
+            -- Show confirmation dialog
+            StaticPopupDialogs["BANKMAIL_RESET_DEFAULTS"] = {
+                text = "Are you sure you want to reset all BankMail settings to their defaults?",
+                button1 = "Yes",
+                button2 = "No",
+                OnAccept = function()
+                    -- Reset to defaults
+                    BankMailDB = {
+                        enabled = true,
+                        accountDefaultRecipient = nil,
+                        characterRecipients = {},
+                        debugMode = false,
+                        enableAutoSwitchOnBank = false,
+                        enableCoinSubject = true
+                    }
+                    -- Update UI
+                    self.enableAddon:SetChecked(true)
+                    self.bankCharInput:SetText("")
+                    self.enableAutoSwitch:SetChecked(false)
+                    self.enableCoinSubject:SetChecked(true)
+                    self.debugMode:SetChecked(false)
+                    print("BankMail: All settings have been reset to defaults")
+                end,
+                timeout = 0,
+                whileDead = true,
+                hideOnEscape = true,
+                preferredIndex = 3
+            }
+            StaticPopup_Show("BANKMAIL_RESET_DEFAULTS")
+        end)
+        defaultsButton:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine("Restore Defaults", 1, 1, 1)
+            GameTooltip:AddLine("Reset all BankMail settings to their default values.", nil, nil, nil, true)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("This will:", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("- Enable the addon", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("- Clear bank character", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("- Disable auto-switch on bank", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("- Enable coin subject auto-fill", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("- Disable debug mode", 0.8, 0.8, 0.8)
+            GameTooltip:Show()
+        end)
+        defaultsButton:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
 
         self.enableAutoSwitch = enableAutoSwitch
         self.enableCoinSubject = enableCoinSubject
