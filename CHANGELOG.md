@@ -1,5 +1,13 @@
 # BankMail Changelog
 
+## [0.10.1] - (2025-01-23)
+
+- Added options panel option for coin subject autofill
+- Enhanced options panel with detailed tooltips for all settings
+- Added "Restore Defaults" button to options panel
+- Renamed settings to use positive boolean names for clarity
+- Fixed some options panel state persistence issues
+
 ## [0.10.0] - (2025-01-23)
 
 - Added automatic subject line for mails with money attachments
