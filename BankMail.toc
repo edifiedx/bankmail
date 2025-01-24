@@ -2,7 +2,7 @@
 ## Title: BankMail
 ## Notes: Auto select bank character as mail recipient, collect mail easier.
 ## SavedVariables: BankMailDB
-## Version: 0.10.2
+## Version: 0.10.3
 
 BankMail_AutoSwitch.lua
 BankMail_Money.lua
