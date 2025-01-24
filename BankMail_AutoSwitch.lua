@@ -127,6 +127,14 @@ function AutoSwitch:CheckAndSwitchTab()
         return
     end
 
+    -- Don't switch if we're already in a mail session
+    if self.currentMailSession then
+        if BankMailDB.debugMode then
+            print("BankMail: Mail session already active, skipping auto-switch")
+        end
+        return
+    end
+
     -- Cancel any pending timer
     if self.mailLoadTimer then
         self.mailLoadTimer:Cancel()
@@ -150,9 +158,10 @@ function AutoSwitch:CheckAndSwitchTab()
             if MailFrameTab2 then
                 MailFrameTab2:Click()
                 self:AutoFillRecipient()
-                self.currentMailSession = true
             end
         end
+        -- Set mail session as active regardless of whether we switched tabs
+        self.currentMailSession = true
         self.mailLoadTimer = nil
     end)
 end
