@@ -1,5 +1,11 @@
 # BankMail Changelog
 
+## [0.10.2] - (2025-01-24)
+
+- Fixed an issue where mail session state was not properly tracked
+- Fixed an issue where auto-switch behavior incorrectly triggered
+- Auto-switch no longer incorrectly triggers when reading mail during an active mail session
+
 ## [0.10.1] - (2025-01-23)
 
 - Added options panel option for coin subject autofill
