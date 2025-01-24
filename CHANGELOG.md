@@ -1,5 +1,10 @@
 # BankMail Changelog
 
+## [0.10.3] - (2025-01-24)
+
+- Fixed an issue where the mail session was not properly closed
+- Enhancements to mail session debugging
+
 ## [0.10.2] - (2025-01-24)
 
 - Fixed an issue where mail session state was not properly tracked

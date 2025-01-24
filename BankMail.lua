@@ -240,11 +240,26 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     -- Handle mail window closing
     if event == "MAIL_CLOSED" then
-        if BankMailDB.debugMode then
-            print("BankMail: Mail closed - resetting session")
+        if BankMailDB and BankMailDB.debugMode then
+            print("BankMail Debug: MAIL_CLOSED event triggered")
+            if BankMail_AutoSwitch then
+                local oldSession = BankMail_AutoSwitch.currentMailSession
+                print("BankMail Debug: Current session state before reset:",
+                    oldSession and date("[%I:%M:%S %p]", oldSession) or "nil")
+            else
+                print("BankMail Debug: AutoSwitch module not found!")
+            end
         end
 
         -- Reset session state in auto-switch module
-        BankMail_AutoSwitch.currentMailSession = false
+        if BankMail_AutoSwitch then
+            BankMail_AutoSwitch.currentMailSession = nil
+
+            if BankMailDB and BankMailDB.debugMode then
+                print("BankMail Debug: Session reset complete. New state:",
+                    BankMail_AutoSwitch.currentMailSession and
+                    date("[%I:%M:%S %p]", BankMail_AutoSwitch.currentMailSession) or "nil")
+            end
+        end
     end
 end)
