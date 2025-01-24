@@ -130,9 +130,19 @@ function AutoSwitch:CheckAndSwitchTab()
     -- Don't switch if we're already in a mail session
     if self.currentMailSession then
         if BankMailDB.debugMode then
-            print("BankMail: Mail session already active, skipping auto-switch")
+            local now = time()
+            local sessionAge = now - self.currentMailSession
+            local startTime = date("[%I:%M:%S %p]", self.currentMailSession)
+            local currentTime = date("[%I:%M:%S %p]", now)
+            print(string.format(
+                "BankMail: Mail session active since %s (current time %s, %d seconds ago), skipping auto-switch",
+                startTime, currentTime, sessionAge))
         end
         return
+    end
+
+    if BankMailDB.debugMode then
+        print("BankMail: Starting fresh mail session check at " .. date("[%I:%M:%S %p]"))
     end
 
     -- Cancel any pending timer
@@ -160,17 +170,24 @@ function AutoSwitch:CheckAndSwitchTab()
                 self:AutoFillRecipient()
             end
         end
-        -- Set mail session as active regardless of whether we switched tabs
-        self.currentMailSession = true
+        -- Set mail session timestamp regardless of whether we switched tabs
+        self.currentMailSession = time()
+        if BankMailDB.debugMode then
+            print("BankMail: New mail session started at " .. date("[%I:%M:%S %p]", self.currentMailSession))
+        end
         self.mailLoadTimer = nil
     end)
 end
 
--- Update the StartMailLoad and FinishMailLoad functions
 function AutoSwitch:StartMailLoad()
     if BankMailDB.debugMode then
-        print("BankMail: Starting mail load")
+        print("BankMail: Starting mail load - resetting session from " ..
+            (self.currentMailSession and date("[%I:%M:%S %p]", self.currentMailSession) or "nil"))
     end
+
+    -- Reset session state when starting a new mail load
+    self.currentMailSession = nil
+
     if self.mailLoadTimer then
         self.mailLoadTimer:Cancel()
         self.mailLoadTimer = nil
