@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.10.4] - (2025-01-25)
+
+- Fixed an issue with command bindings
+
 ## [0.10.3] - (2025-01-24)
 
 - Fixed an issue where the mail session was not properly closed
