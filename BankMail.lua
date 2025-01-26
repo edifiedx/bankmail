@@ -135,7 +135,7 @@ local function HandleSlashCommand(msg)
         else
             BankMail_Options.SetAccountDefaultRecipient(arg)
         end
-    elseif command == "setcharacter" or command == "sc" then
+    elseif command == "setchar" or command == "sc" then
         if arg == "" then
             local charKey = BankMail_AutoSwitch:GetCharacterKey()
             BankMailDB.characterRecipients[charKey] = nil
