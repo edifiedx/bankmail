@@ -1,5 +1,11 @@
 # BankMail Changelog
 
+## [0.10.5] - (2025-01-26)
+
+- Improved money collection categorization
+- Added separate tracking for auction returns, cancellations, and purchases
+- Enhanced tooltip clarity for different money sources
+
 ## [0.10.4] - (2025-01-25)
 
 - Fixed an issue with command bindings

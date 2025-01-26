@@ -19,17 +19,25 @@ local function GetMoneyBySender()
         if money and money > 0 then
             -- Determine the category
             local category
-            if subject and subject:find("Auction successful:") then
-                category = "Auction"
-            else
-                -- Use senderName if available, fall back to sender, then to "Unknown"
-                category = senderName or sender or "Unknown Sender"
-                -- If the sender is a number (likely a GUID), use "Unknown Sender"
-                if tonumber(category) then
-                    category = "Unknown Sender"
+            if subject then
+                if subject:find("Auction successful:") then
+                    category = "Auction Sales"
+                elseif subject:find("Outbid on") then
+                    category = "Auction Returns"
+                elseif subject:find("Cancelled auction") then
+                    category = "Auction Cancels"
+                elseif subject:find("Won") then
+                    category = "Auction Purchases"
+                else
+                    -- Group by sender for non-auction mail
+                    category = senderName or sender or "Unknown Sender"
+                    if tonumber(category) then
+                        category = "Unknown Sender"
+                    end
                 end
+            else
+                category = "Unknown Sender"
             end
-
             -- Initialize or update the category
             moneyGroups[category] = (moneyGroups[category] or 0) + money
         end
