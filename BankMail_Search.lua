@@ -45,8 +45,7 @@ local function GetMailItems(mailIndex)
 
         local itemLink = GetInboxItemLink(mailIndex, attachIndex)
         if itemLink then
-            local name, _, _, _, _, _, _, _, _, texture = C_Item.GetItemInfo(itemLink)
-            local _, _, count = GetInboxItem(mailIndex, attachIndex)
+            local name, itemID, texture, count = GetInboxItem(mailIndex, attachIndex)
 
             if name then
                 if BankMailDB and BankMailDB.debugMode then
@@ -58,6 +57,7 @@ local function GetMailItems(mailIndex)
                 table.insert(items, {
                     name = name,
                     itemLink = itemLink,
+                    itemID = itemID,
                     texture = texture,
                     count = count or 1,
                     mailIndex = mailIndex,
@@ -182,7 +182,7 @@ function BankMail_Search:CreateSearchUI()
     if not self.container then
         self.container = CreateFrame("Frame", "BankMailSearchContainer", InboxFrame, "BackdropTemplate")
         self.container:SetPoint("TOPLEFT", InboxFrame, "TOPLEFT", 0, -55)
-        self.container:SetPoint("BOTTOMRIGHT", InboxFrame, "BOTTOMRIGHT", -50, 125)
+        self.container:SetPoint("BOTTOMRIGHT", InboxFrame, "BOTTOMRIGHT", -50, 90)
         self.container:SetFrameStrata("HIGH")
         self.container:EnableMouse(true)
 
@@ -203,21 +203,25 @@ function BankMail_Search:CreateSearchUI()
     -- Create search box if it doesn't exist
     if not self.searchBox then
         self.searchBox = CreateFrame("EditBox", "BankMailSearchBox", InboxFrame, "SearchBoxTemplate")
-        self.searchBox:SetPoint("TOP", InboxFrame, "TOP", -50, -30) -- Moved left to make room for button
-        self.searchBox:SetSize(150, 20)                             -- Slightly smaller to accommodate button
-        self.searchBox:SetAutoFocus(false)
+        self.searchBox:SetPoint("TOP", InboxFrame, "TOP", -35, -30)
+        self.searchBox:SetSize(175, 20)
+        self.searchBox:SetAutoFocus(true)
+        self.searchBox.Instructions:SetText("search...") -- omg, maybe?
 
         -- Create Show All button
         local showAllButton = CreateFrame("Button", "BankMailShowAllButton", InboxFrame, "UIPanelButtonTemplate")
-        showAllButton:SetSize(80, 22)
+        showAllButton:SetSize(65, 22)
         showAllButton:SetPoint("LEFT", self.searchBox, "RIGHT", 10, 0)
-        showAllButton:SetText("Show All")
+        showAllButton:SetText("Browse")
 
         -- Add tooltip to Show All button
         showAllButton:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:AddLine("Show All Items")
-            GameTooltip:AddLine("Display all items in your inbox", 1, 1, 1, true)
+            GameTooltip:AddLine(
+                "Display all items in your inbox\n\nLeft-click: take a single item stack\nRight-click: take all item stacks",
+                1,
+                1, 1, true)
             GameTooltip:Show()
         end)
         showAllButton:SetScript("OnLeave", function(self)
@@ -236,11 +240,6 @@ function BankMail_Search:CreateSearchUI()
         self.searchBox:SetScript("OnTextChanged", function(self, userInput)
             if userInput then
                 local text = self:GetText()
-                if text and text ~= "" then
-                    self.clearButton:Show()
-                else
-                    self.clearButton:Hide()
-                end
                 BankMail_Search:OnSearchTextChanged(text)
             end
         end)
@@ -265,8 +264,8 @@ function BankMail_Search:CreateSearchUI()
         self.scrollFrame:SetPoint("BOTTOMRIGHT", self.container, "BOTTOMRIGHT", -28, 8)
 
         self.content = CreateFrame("Frame", nil, self.scrollFrame)
-        self.content:SetWidth(self.scrollFrame:GetWidth() - 30) -- Account for scrollbar
-        self.content:SetHeight(400)                             -- Initial height, will adjust based on results
+        self.content:SetWidth(self.scrollFrame:GetWidth() - 30)
+        self.content:SetHeight(400)
 
         self.scrollFrame:SetScrollChild(self.content)
     end
@@ -329,9 +328,10 @@ function BankMail_Search:ShowResults(results)
     end
 
     -- Layout results in a grid
-    local buttonSize = 37
-    local padding = 5
-    local contentWidth = self.content:GetWidth() - 30 -- Account for scroll bar
+    local buttonSize = 36
+    local padding = 1
+    local containerOffset = 30
+    local contentWidth = self.container:GetWidth() - 25
     local columns = math.max(1, math.floor((contentWidth - padding) / (buttonSize + padding)))
 
     if BankMailDB and BankMailDB.debugMode then
@@ -344,15 +344,9 @@ function BankMail_Search:ShowResults(results)
         local col = (i - 1) % columns
         local row = math.floor((i - 1) / columns)
 
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: Item", i, result.name, "Position - Col:", col, "Row:", row)
-            print("BankMail Search: Texture:", result.texture)
-            print("BankMail Search: ItemLink:", result.itemLink)
-        end
-
         button:ClearAllPoints()
         button:SetPoint("TOPLEFT", self.content, "TOPLEFT",
-            col * (buttonSize + padding) + padding,
+            col * (buttonSize + padding) + padding + containerOffset,
             -(row * (buttonSize + padding) + padding))
 
         button.icon:SetTexture(result.texture)
