@@ -1,25 +1,42 @@
 # BankMail
 
-BankMail is a lightweight World of Warcraft addon that streamlines sending mail between your characters, with a particular focus on managing a dedicated "bank alt" character. Essential for hardcore players looking to efficiently manage inventory and preserve valuable resources.
+BankMail is a lightweight World of Warcraft addon that streamlines mail management between your characters, with powerful features for hardcore players who need efficient inventory management.
 
-## Features
+## Key Features
 
-- **Automatic Tab Switching**: Switches to the "Send Mail" tab when opening an empty mailbox
-- **Smart Recipient Management**:
-  - Remembers your bank character
+- **Powerful Inbox Search**:
+
+  - Search through all mail attachments instantly
+  - Visual item grid display for quick browsing
+  - One-click item collection
+  - Perfect for finding specific BoEs or materials
+
+- **Smart Mail Handling**:
+
+  - Automatic "Send Mail" tab switching
+  - Remembers bank character for each alt
   - Auto-fills recipient field
-  - Supports character-specific or account-wide defaults
+  - Right-click to collect all items from a mail
+
 - **Auction House Integration**:
-  - "Open Coin" button to quickly collect auction house earnings
-  - Right-click message to collect attachments
-- **Bank Character Options**: Configurable auto-switching behavior for your bank character
-- **Simple Configuration**:
-  - Use slash commands (`/bank` or `/bankmail`)
-  - Clean options panel for all settings
 
-## Why BankMail?
+  - "Open Coin" button for quick earnings collection
+  - Smart categorization of auction earnings vs. other money
+  - Detailed tooltips showing pending amounts
 
-For hardcore players, every second counts and every inventory slot matters. BankMail helps you quickly transfer items to your bank alt, keeping your bags clear and your valuable items secure. No more typing character names repeatedly or switching tabs manually - just open your mailbox and start sending.
+- **Attachment Automation**:
+  - Auto-attaches unbound BoE items
+  - Visual confirmation of attached items
+  - Streamlined multi-item handling
+
+## Why BankMail for Hardcore?
+
+For hardcore players, every second counts and every inventory slot matters. BankMail helps you:
+
+- Quickly locate and retrieve specific items from a full inbox
+- Transfer items efficiently to your bank alt
+- Manage auction house sales without wasted clicks
+- Never lose track of valuable BoEs
 
 ## Usage
 
@@ -27,20 +44,21 @@ For hardcore players, every second counts and every inventory slot matters. Bank
 
 - `/bank toggle` - Enable/disable automatic tab switching
 - `/bank set CharacterName` - Set account-wide default recipient
-- `/bank setcharacter CharacterName` - Set character-specific default recipient
-- `/bank show` - Show current recipient settings
+- `/bank setchar CharacterName` - Set character-specific default recipient
+- `/bank config` - Open options panel
 
-## Perfect for:
+### Search Tips
 
-- Players who regularly mail items between characters
-- Those maintaining a dedicated bank alt for auctions and storage
-- Hardcore players where efficient inventory management can mean the difference between life and death
+- Press `Escape` once to clear search, twice to close mailbox
+- Click "Browse" to see all inbox items in a grid
+- Click any item to collect it
+- Search matches partial item names
 
 ## Installation
 
 1. Download from CurseForge
 2. Extract to your `World of Warcraft/_classic_era_/Interface/AddOns` folder
-3. Run `/reload ui` if World of Warcraft is already running.
+3. Reload your UI if WoW is running
 
 ## Contributing
 
