@@ -13,6 +13,7 @@ local BankMail_Money = _G[addonName .. "_Money"]
 local BankMail_AutoSwitch = _G[addonName .. "_AutoSwitch"]
 local BankMail_AutoAttach = _G[addonName .. "_AutoAttach"]
 local BankMail_Options = _G[addonName .. "_Options"]
+local BankMail_Search = _G[addonName .. "_Search"]
 
 -- Update default settings
 local defaults = {
@@ -174,10 +175,6 @@ SlashCmdList["BANKMAIL"] = HandleSlashCommand
 -- Event handler
 frame:SetScript("OnEvent", function(self, event, ...)
     local arg1 = ...
-    -- if BankMailDB and BankMailDB.debugMode then
-    --     print("BankMail: Event fired:", event, "arg1:", arg1 or "nil")
-    -- end
-
     if BankMailDB and BankMailDB.debugMode and arg1 == addonName then
         print("BankMail: Event fired:", event, "arg1:", arg1 or "nil")
     end
@@ -203,20 +200,29 @@ frame:SetScript("OnEvent", function(self, event, ...)
             print("BankMail: Database initialized")
         end
 
+        -- Initialize all modules
         if BankMail_AutoSwitch and BankMail_AutoSwitch.Init then
             BankMail_AutoSwitch:Init()
         else
             print("BankMail: Warning - AutoSwitch module not found")
         end
+
         if BankMail_AutoAttach and BankMail_AutoAttach.Init then
             BankMail_AutoAttach:Init()
         else
             print("BankMail: Warning - AutoAttach module not found")
         end
+
         if BankMail_Money and BankMail_Money.Init then
             BankMail_Money:Init()
         else
             print("BankMail: Warning - Money module not found")
+        end
+
+        if BankMail_Search and BankMail_Search.Init then
+            BankMail_Search:Init()
+        else
+            print("BankMail: Warning - Search module not found")
         end
     end
 

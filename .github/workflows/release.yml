@@ -128,10 +128,3 @@ jobs:
           body: "${{ steps.changelog.outputs.CHANGELOG_ENTRY }}"
           draft: false
           prerelease: false
-          files: |
-            BankMail.lua
-            BankMail.toc
-            BankMail_AutoSwitch.lua
-            BankMail_Money.lua
-            BankMail_Options.lua
-            CHANGELOG.md

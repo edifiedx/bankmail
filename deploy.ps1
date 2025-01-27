@@ -21,35 +21,66 @@ if (-not (Test-Path $tocPath)) {
 $requiredFiles = @("BankMail.toc")  # Always include the .toc file
 $tocContent = Get-Content $tocPath
 foreach ($line in $tocContent) {
-    # Skip comments and empty lines
-    if ($line -match '^\s*$' -or $line -match '^\s*#' -or $line -match '^\s*##') {
+    if (-not ($line -match '^\s*$' -or $line -match '^\s*#' -or $line -match '^\s*##')) {
+        $requiredFiles += $line.Trim()
+    }
+}
+
+# Format for status updates
+$maxFileLength = ($requiredFiles | Measure-Object -Maximum Length).Maximum
+$format = "{0,-${maxFileLength}} {1,-12} {2}"
+
+Write-Host ($format -f "File", "Status", "Details")
+Write-Host ("-" * ($maxFileLength + 20))
+
+# Copy files with status updates
+$copied = 0
+$skipped = 0
+$errors = 0
+
+foreach ($file in $requiredFiles) {
+    $sourcePath = Join-Path $source $file
+    $destPath = Join-Path $destination $file
+    
+    if (-not (Test-Path $sourcePath)) {
+        Write-Host ($format -f $file, "ERROR", "Source file missing") -ForegroundColor Red
+        $errors++
         continue
     }
-    
-    # Add the file to our list
-    $requiredFiles += $line.Trim()
-}
 
-Write-Host "Files to deploy:" -ForegroundColor Cyan
-$requiredFiles | ForEach-Object { Write-Host "  - $_" }
-
-# Verify source files exist
-foreach ($file in $requiredFiles) {
-    if (-not (Test-Path "$source\$file")) {
-        Write-Error "Missing required file: $file"
-        exit 1
+    try {
+        $sourceHash = Get-FileHash $sourcePath -Algorithm MD5
+        
+        if (Test-Path $destPath) {
+            $destHash = Get-FileHash $destPath -Algorithm MD5
+            
+            if ($sourceHash.Hash -eq $destHash.Hash) {
+                Write-Host ($format -f $file, "SKIPPED", "Files identical") -ForegroundColor DarkGray
+                $skipped++
+                continue
+            }
+        }
+        
+        Copy-Item $sourcePath $destPath -Force
+        Write-Host ($format -f $file, "COPIED", "Updated") -ForegroundColor Green
+        $copied++
+    }
+    catch {
+        Write-Host ($format -f $file, "ERROR", $_.Exception.Message) -ForegroundColor Red
+        $errors++
     }
 }
 
-# Copy all files
-try {
-    foreach ($file in $requiredFiles) {
-        Copy-Item "$source\$file" "$destination" -Force
-        Write-Host "Copied $file"
-    }
-    Write-Host "`nDeployment complete!" -ForegroundColor Green
-}
-catch {
-    Write-Error "Error during deployment: $_"
+# Print summary
+Write-Host "`nDeployment Summary:" -ForegroundColor Cyan
+Write-Host "  Files copied:  $copied"
+Write-Host "  Files skipped: $skipped"
+Write-Host "  Errors:        $errors"
+
+if ($errors -gt 0) {
+    Write-Host "`nDeployment completed with errors!" -ForegroundColor Red
     exit 1
+}
+else {
+    Write-Host "`nDeployment completed successfully!" -ForegroundColor Green
 }
