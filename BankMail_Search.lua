@@ -264,9 +264,13 @@ function BankMail_Search:CreateSearchUI()
 
         -- Handle escape and enter
         self.searchBox:SetScript("OnEscapePressed", function(self)
-            self:SetText("")
-            self:ClearFocus()
-            BankMail_Search:HideResults()
+            if self:GetText() ~= "" then
+                self:SetText("")
+                self:ClearFocus()
+                BankMail_Search:HideResults()
+            else
+                HideUIPanel(MailFrame)
+            end
         end)
 
         self.searchBox:SetScript("OnEnterPressed", function(self)

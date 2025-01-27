@@ -1,5 +1,10 @@
 # BankMail Changelog
 
+## [0.12.1] - (2025-01-27)
+
+- Fixed an issue with search box Escape key behavior
+- Now properly closes mailbox when search is empty
+
 ## [0.12.0] - (2025-01-27)
 
 - Added inbox search functionality
