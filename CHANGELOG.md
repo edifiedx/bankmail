@@ -1,5 +1,10 @@
 # BankMail Changelog
 
+## [0.11.1] - (2025-01-26)
+
+- Fixed "Detailed Attachment Printing" option not saving correctly
+- Improved options panel state management
+
 ## [0.11.0] - (2025-01-26)
 
 - Added automatic BoE item attachment feature

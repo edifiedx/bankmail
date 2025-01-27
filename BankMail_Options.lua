@@ -226,6 +226,7 @@ function Options.Show(self)
                 print("BankMail: Auto-attach " .. (checked and "enabled" or "disabled"))
             end)
         enableAutoAttach:SetPoint("TOPLEFT", enableCoinSubject, "BOTTOMLEFT", 0, -8)
+        self.enableAutoAttach = enableAutoAttach
 
         local enableAutoAttachmentDetails = checkbox(
             "Detailed Attachment Printing",
@@ -234,10 +235,11 @@ function Options.Show(self)
             true, -- Default value
             function(_, checked)
                 if not BankMailDB then BankMailDB = {} end
-                BankMailDB.enableDetailedPrinting = checked
+                BankMailDB.enableAutoAttachmentDetails = checked
                 print("BankMail: Detailed printing " .. (checked and "enabled" or "disabled"))
             end)
         enableAutoAttachmentDetails:SetPoint("TOPLEFT", enableAutoAttach, "BOTTOMLEFT", 0, -8)
+        self.enableAutoAttachmentDetails = enableAutoAttachmentDetails
 
         -- debug mode
         local debugMode = checkbox(
@@ -318,6 +320,8 @@ function Options.Show(self)
     if BankMailDB.enableAutoSwitchOnBank == nil then BankMailDB.enableAutoSwitchOnBank = false end
     if BankMailDB.enableCoinSubject == nil then BankMailDB.enableCoinSubject = true end
     if BankMailDB.debugMode == nil then BankMailDB.debugMode = false end
+    if BankMailDB.enableAutoAttach == nil then BankMailDB.enableAutoAttach = true end
+    if BankMailDB.enableAutoAttachmentDetails == nil then BankMailDB.enableAutoAttachmentDetails = true end
 
     -- Update UI to match current values
     self.enableAddon:SetChecked(BankMailDB.enabled)

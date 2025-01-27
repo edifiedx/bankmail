@@ -9,16 +9,6 @@ _G[addonName .. "_AutoAttach"] = BankMail_AutoAttach
 local MAX_ATTACHMENTS = ATTACHMENTS_MAX_SEND or 12
 local ATTACH_DELAY = 0.3
 
--- Default settings
-local defaults = {
-    enableAutoAttach = true,
-    enableDetailedPrinting = true
-}
-
--- Initialize settings
-if not BankMailDB then BankMailDB = {} end
-if BankMailDB.enableAutoAttach == nil then BankMailDB.enableAutoAttach = defaults.enableAutoAttach end
-if BankMailDB.enableDetailedPrinting == nil then BankMailDB.enableDetailedPrinting = defaults.enableDetailedPrinting end
 
 -- Helper function to check if an item is BoE
 local function IsBoEItem(bag, slot)
@@ -91,7 +81,7 @@ function BankMail_AutoAttach:AttachBoEItems()
 
     local function AttachNext()
         if itemIndex > itemsToAttach then
-            if #attachedItems > 0 and BankMailDB.enableDetailedPrinting then
+            if #attachedItems > 0 and BankMailDB.enableAutoAttachmentDetails then
                 print(string.format("BankMail: Auto-attached %d BoE items:", #attachedItems))
                 for _, item in ipairs(attachedItems) do
                     print(string.format("%dx %s", item.count, item.link))
