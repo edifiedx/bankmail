@@ -3,7 +3,8 @@ local addonName = "BankMail"
 local BankMail_Search = {
     initialized = false,
     currentSearchText = "",
-    isSearching = false
+    isSearching = false,
+    resultsVisible = false
 }
 _G[addonName .. "_Search"] = BankMail_Search
 
@@ -208,38 +209,55 @@ function BankMail_Search:CreateSearchUI()
         self.searchBox:SetAutoFocus(true)
         self.searchBox.Instructions:SetText("search...") -- omg, maybe?
 
-        -- Create Show All button
-        local showAllButton = CreateFrame("Button", "BankMailShowAllButton", InboxFrame, "UIPanelButtonTemplate")
-        showAllButton:SetSize(65, 22)
-        showAllButton:SetPoint("LEFT", self.searchBox, "RIGHT", 10, 0)
-        showAllButton:SetText("Browse")
+        -- browse button
+        if not self.browseButton then
+            self.browseButton = CreateFrame("Button", "BankMailShowAllButton", InboxFrame, "UIPanelButtonTemplate")
+            self.browseButton:SetSize(65, 22)
+            self.browseButton:SetPoint("LEFT", self.searchBox, "RIGHT", 10, 0)
+            self.browseButton:SetText("Browse")
 
-        -- Add tooltip to Show All button
-        showAllButton:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:AddLine("Show All Items")
-            GameTooltip:AddLine(
-                "Display all items in your inbox\n\nLeft-click: take a single item stack\nRight-click: take all item stacks",
-                1,
-                1, 1, true)
-            GameTooltip:Show()
-        end)
-        showAllButton:SetScript("OnLeave", function(self)
-            GameTooltip:Hide()
-        end)
+            -- Add tooltip
+            self.browseButton:SetScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                if BankMail_Search.resultsVisible then
+                    GameTooltip:AddLine("Hide Items")
+                    GameTooltip:AddLine("Hide the item browser", 1, 1, 1, true)
+                else
+                    GameTooltip:AddLine("Show All Items")
+                    GameTooltip:AddLine(
+                        "Display all items in your inbox\n\nLeft-click: take a single item stack", --\nRight-click: take all item stacks",
+                        1, 1, 1, true)
+                end
+                GameTooltip:Show()
+            end)
 
-        -- Handle Show All button click
-        showAllButton:SetScript("OnClick", function()
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Search: Show All button clicked")
-            end
-            self:ShowAllItems()
-        end)
+            self.browseButton:SetScript("OnLeave", function(self)
+                GameTooltip:Hide()
+            end)
+
+
+            -- Handle button click with toggle behavior
+            self.browseButton:SetScript("OnClick", function()
+                if self.resultsVisible then
+                    self:HideResults()
+                else
+                    if BankMailDB and BankMailDB.debugMode then
+                        print("BankMail Search: Show All button clicked")
+                    end
+                    self:ShowAllItems()
+                end
+            end)
+        end
 
         -- Update search box behavior
         self.searchBox:SetScript("OnTextChanged", function(self, userInput)
+            local text = self:GetText()
+            if text and text ~= "" then
+                self.Instructions:SetText("")
+            else
+                self.Instructions:SetText("search...")
+            end
             if userInput then
-                local text = self:GetText()
                 BankMail_Search:OnSearchTextChanged(text)
             end
         end)
@@ -314,6 +332,11 @@ function BankMail_Search:ShowResults(results)
         self:CreateSearchUI()
     end
 
+    self.resultsVisible = true
+    if self.browseButton then
+        self.browseButton:SetText("Hide")
+    end
+
     -- Clear existing buttons
     for _, button in ipairs(self.activeButtons) do
         button:Hide()
@@ -371,6 +394,11 @@ function BankMail_Search:HideResults()
         if InboxFrame.Pages then
             InboxFrame.Pages:Show()
         end
+    end
+
+    self.resultsVisible = false
+    if self.browseButton then
+        self.browseButton:SetText("Browse")
     end
 end
 

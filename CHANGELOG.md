@@ -1,5 +1,17 @@
 # BankMail Changelog
 
+## [0.12.0] - (2025-01-27)
+
+- Added inbox search functionality
+  - Search bar for filtering items by name
+  - Browse button to view all items in inbox
+  - Grid view of searchable mail attachments
+  - Direct item collection via click interface
+  - Clear visual separation of search results
+  - Instant search updates as you type
+  - Search results maintain stack count display
+  - Tooltip preview for all items
+
 ## [0.11.2] - (2025-01-26)
 
 - Fixed an issue with "AutoAttach" button placement
