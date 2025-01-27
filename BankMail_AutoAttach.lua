@@ -125,7 +125,7 @@ end
 function BankMail_AutoAttach:CreateAttachButton()
     local button = CreateFrame("Button", "BankMailAutoAttachButton", SendMailFrame, "UIPanelButtonTemplate")
     button:SetSize(100, 22)
-    button:SetPoint("RIGHT", SendMailCancelButton, "LEFT", -5, 0)
+    button:SetPoint("TOP", SendMailMailButton, "BOTTOM", 0, -5)
     button:SetText("Auto Attach")
 
     -- Add tooltip

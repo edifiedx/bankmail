@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.11.2] - (2025-01-26)
+
+- Fixed an issue with "AutoAttach" button placement
+
 ## [0.11.1] - (2025-01-26)
 
 - Fixed "Detailed Attachment Printing" option not saving correctly
