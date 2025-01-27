@@ -10,15 +10,30 @@ if (-not (Test-Path $destination)) {
     Write-Host "Created destination directory: $destination"
 }
 
-# Verify source files exist
-$requiredFiles = @(
-    "BankMail.lua",
-    "BankMail.toc",
-    "BankMail_Money.lua",
-    "BankMail_Options.lua",
-    "BankMail_AutoSwitch.lua"
-)
+# Read .toc file
+$tocPath = Join-Path $source "BankMail.toc"
+if (-not (Test-Path $tocPath)) {
+    Write-Error "Missing BankMail.toc file"
+    exit 1
+}
 
+# Parse .toc file to get the list of files
+$requiredFiles = @("BankMail.toc")  # Always include the .toc file
+$tocContent = Get-Content $tocPath
+foreach ($line in $tocContent) {
+    # Skip comments and empty lines
+    if ($line -match '^\s*$' -or $line -match '^\s*#' -or $line -match '^\s*##') {
+        continue
+    }
+    
+    # Add the file to our list
+    $requiredFiles += $line.Trim()
+}
+
+Write-Host "Files to deploy:" -ForegroundColor Cyan
+$requiredFiles | ForEach-Object { Write-Host "  - $_" }
+
+# Verify source files exist
 foreach ($file in $requiredFiles) {
     if (-not (Test-Path "$source\$file")) {
         Write-Error "Missing required file: $file"

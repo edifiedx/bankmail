@@ -189,7 +189,7 @@ function Options.Show(self)
         self.bankCharInput = bankCharInput
         self.enableAddon = enableAddon
 
-        -- Add remaining checkboxes...
+        -- Add feature checkboxes
         local enableAutoSwitch = checkbox(
             "Enable Auto-Switch on Bank Character",
             "Enable automatic tab switching when on the bank character",
@@ -214,6 +214,32 @@ function Options.Show(self)
             end)
         enableCoinSubject:SetPoint("TOPLEFT", enableAutoSwitch, "BOTTOMLEFT", 0, -8)
 
+        -- Add Auto-Attach options
+        local enableAutoAttach = checkbox(
+            "Enable Auto-Attach",
+            "Automatically attach BoE items when sending mail",
+            "When enabled, BankMail will automatically attach unbound BoE items when the mail window opens and switches to send mode.",
+            true, -- Default value
+            function(_, checked)
+                if not BankMailDB then BankMailDB = {} end
+                BankMailDB.enableAutoAttach = checked
+                print("BankMail: Auto-attach " .. (checked and "enabled" or "disabled"))
+            end)
+        enableAutoAttach:SetPoint("TOPLEFT", enableCoinSubject, "BOTTOMLEFT", 0, -8)
+
+        local enableAutoAttachmentDetails = checkbox(
+            "Detailed Attachment Printing",
+            "Show detailed list of attached items",
+            "When enabled, BankMail will print a detailed list of items that were automatically attached.",
+            true, -- Default value
+            function(_, checked)
+                if not BankMailDB then BankMailDB = {} end
+                BankMailDB.enableDetailedPrinting = checked
+                print("BankMail: Detailed printing " .. (checked and "enabled" or "disabled"))
+            end)
+        enableAutoAttachmentDetails:SetPoint("TOPLEFT", enableAutoAttach, "BOTTOMLEFT", 0, -8)
+
+        -- debug mode
         local debugMode = checkbox(
             "Debug Mode",
             "Enable debug logging",
@@ -224,7 +250,7 @@ function Options.Show(self)
                 BankMailDB.debugMode = checked
                 print("BankMail: Debug mode " .. (checked and "enabled" or "disabled"))
             end)
-        debugMode:SetPoint("TOPLEFT", enableCoinSubject, "BOTTOMLEFT", 0, -8)
+        debugMode:SetPoint("TOPLEFT", enableAutoAttachmentDetails, "BOTTOMLEFT", 0, -8)
 
         -- Create Restore Defaults button
         local defaultsButton = CreateFrame("Button", nil, self, "UIPanelButtonTemplate")
@@ -298,6 +324,8 @@ function Options.Show(self)
     self.bankCharInput:SetText(BankMailDB.accountDefaultRecipient or "")
     self.enableAutoSwitch:SetChecked(BankMailDB.enableAutoSwitchOnBank)
     self.enableCoinSubject:SetChecked(BankMailDB.enableCoinSubject)
+    self.enableAutoAttach:SetChecked(BankMailDB.enableAutoAttach)
+    self.enableAutoAttachmentDetails:SetChecked(BankMailDB.enableAutoAttachmentDetails)
     self.debugMode:SetChecked(BankMailDB.debugMode)
 end
 

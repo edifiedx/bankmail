@@ -1,5 +1,18 @@
 # BankMail Changelog
 
+## [0.11.0] - (2025-01-26)
+
+- Added automatic BoE item attachment feature
+  - Automatically attaches unbound BoE items when sending mail
+  - New "Auto Attach" button in the mail window
+  - Configurable via options panel
+- Added detailed attachment printing option
+  - Lists each item attached when enabled
+  - Provides stack count information
+- Added new options panel settings:
+  - Enable Auto-Attach (default: on)
+  - Detailed Attachment Printing (default: on)
+
 ## [0.10.5] - (2025-01-26)
 
 - Improved money collection categorization

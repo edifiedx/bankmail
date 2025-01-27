@@ -11,6 +11,7 @@ local addonName = "BankMail"
 
 local BankMail_Money = _G[addonName .. "_Money"]
 local BankMail_AutoSwitch = _G[addonName .. "_AutoSwitch"]
+local BankMail_AutoAttach = _G[addonName .. "_AutoAttach"]
 local BankMail_Options = _G[addonName .. "_Options"]
 
 -- Update default settings
@@ -20,7 +21,9 @@ local defaults = {
     characterRecipients = {},
     debugMode = false,
     enableAutoSwitchOnBank = false,
-    enableCoinSubject = true
+    enableCoinSubject = true,
+    enableAutoAttach = true,
+    enableAutoAttachmentDetails = true
 
 }
 
@@ -204,6 +207,11 @@ frame:SetScript("OnEvent", function(self, event, ...)
             BankMail_AutoSwitch:Init()
         else
             print("BankMail: Warning - AutoSwitch module not found")
+        end
+        if BankMail_AutoAttach and BankMail_AutoAttach.Init then
+            BankMail_AutoAttach:Init()
+        else
+            print("BankMail: Warning - AutoAttach module not found")
         end
         if BankMail_Money and BankMail_Money.Init then
             BankMail_Money:Init()
