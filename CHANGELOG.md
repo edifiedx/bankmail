@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.12.3] - (2025-01-27)
+
+- Fixed an issue where search debug was ignoring debug setting
+
 ## [0.12.2] - (2025-01-27)
 
 - Enhanced mail search functionality:

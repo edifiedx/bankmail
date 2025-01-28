@@ -159,8 +159,10 @@ local function SearchInbox(searchText)
             local items = GetMailItems(i)
             for _, item in ipairs(items) do
                 if item.name and item.name:lower():find(searchText) then
-                    print(string.format("BankMail Search: Found match: %s (x%d) in mail %d slot %d",
-                        item.name, item.count, item.mailIndex, item.attachIndex))
+                    if BankMailDB and BankMailDB.debugMode then
+                        print(string.format("BankMail Search: Found match: %s (x%d) in mail %d slot %d",
+                            item.name, item.count, item.mailIndex, item.attachIndex))
+                    end
                     table.insert(results, item)
                     if #results >= MAX_RESULTS then
                         print("BankMail Search: Reached maximum results limit of", MAX_RESULTS)
