@@ -11,9 +11,11 @@ _G[addonName .. "_Search"] = BankMail_Search
 -- Constants
 local SEARCH_UPDATE_DELAY = 0.2
 local MAX_RESULTS = 100
+local TAKE_ALL_DELAY = 0.3
 
 -- Create a frame for handling updates
 local updateFrame = CreateFrame("Frame")
+updateFrame:RegisterEvent("MAIL_INBOX_UPDATE")
 local searchTimer = nil
 
 -- Helper function to collect item data from a mail
@@ -79,6 +81,55 @@ local function GetMailItems(mailIndex)
     return items
 end
 
+-- Function to take all stacks of a specific item
+local function TakeAllStacksOfItem(itemID, itemStacks)
+    if BankMailDB and BankMailDB.debugMode then
+        print("BankMail Search: Taking all stacks of itemID:", itemID)
+        print("BankMail Search: Found", #itemStacks, "stacks to collect")
+    end
+
+    table.sort(itemStacks, function(a, b) return a.mailIndex < b.mailIndex end)
+
+    local currentIndex = 1
+
+    local function TakeNextStack()
+        if currentIndex > #itemStacks then
+            if BankMailDB and BankMailDB.debugMode then
+                print("BankMail Search: Finished taking all stacks")
+            end
+            return
+        end
+
+        local stack = itemStacks[currentIndex]
+        if BankMailDB and BankMailDB.debugMode then
+            print(string.format("BankMail Search: Taking stack %d/%d from mail %d, slot %d",
+                currentIndex, #itemStacks, stack.mailIndex, stack.attachIndex))
+        end
+
+        -- Take the item
+        TakeInboxItem(stack.mailIndex, stack.attachIndex)
+
+        -- Set up next iteration
+        currentIndex = currentIndex + 1
+
+        -- Wait for the MAIL_INBOX_UPDATE event before proceeding
+        C_Timer.After(TAKE_ALL_DELAY, function()
+            -- Verify the item was taken
+            local stillExists = GetInboxItemLink(stack.mailIndex, stack.attachIndex)
+            if stillExists then
+                -- Item still exists, try again
+                C_Timer.After(TAKE_ALL_DELAY, TakeNextStack)
+            else
+                -- Item was taken, move to next
+                TakeNextStack()
+            end
+        end)
+    end
+
+    -- Start the process
+    TakeNextStack()
+end
+
 -- Function to search through inbox
 local function SearchInbox(searchText)
     if BankMailDB and BankMailDB.debugMode then
@@ -131,6 +182,7 @@ end
 local function CreateSearchResultButton(parent)
     local button = CreateFrame("Button", nil, parent)
     button:SetSize(37, 37)
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
     -- Add button background (slot texture)
     local background = button:CreateTexture(nil, "BACKGROUND")
@@ -159,6 +211,9 @@ local function CreateSearchResultButton(parent)
         if self.itemLink then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetHyperlink(self.itemLink)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("Left-click to take this stack", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("Right-click to take all stacks", 0.8, 0.8, 0.8)
             GameTooltip:Show()
         end
     end)
@@ -168,9 +223,29 @@ local function CreateSearchResultButton(parent)
     end)
 
     -- Add click handling
-    button:SetScript("OnClick", function(self)
-        if self.mailIndex and self.attachIndex then
-            TakeInboxItem(self.mailIndex, self.attachIndex)
+    button:SetScript("OnClick", function(self, buttonName)
+        if not self.itemID then return end
+
+        if buttonName == "LeftButton" then
+            -- Take single stack
+            if self.mailIndex and self.attachIndex then
+                TakeInboxItem(self.mailIndex, self.attachIndex)
+            end
+        elseif buttonName == "RightButton" then
+            -- Take all stacks of this item
+            local allResults = SearchInbox(self.name:lower())
+            local sameItemStacks = {}
+
+            -- Find all stacks of the same item
+            for _, result in ipairs(allResults) do
+                if result.itemID == self.itemID then
+                    table.insert(sameItemStacks, result)
+                end
+            end
+
+            if #sameItemStacks > 0 then
+                TakeAllStacksOfItem(self.itemID, sameItemStacks)
+            end
         end
     end)
 
@@ -224,10 +299,11 @@ function BankMail_Search:CreateSearchUI()
                     GameTooltip:AddLine("Hide the item browser", 1, 1, 1, true)
                 else
                     GameTooltip:AddLine("Show All Items")
-                    GameTooltip:AddLine(
-                        "Display all items in your inbox\n\nLeft-click: take a single item stack", --\nRight-click: take all item stacks",
-                        1, 1, 1, true)
+                    GameTooltip:AddLine("Display all items in your inbox")
                 end
+                GameTooltip:AddLine("")
+                GameTooltip:AddLine("Left-click: take a single item stack", 1, 1, 1, true)
+                GameTooltip:AddLine("Right-click: take all item stacks", 1, 1, 1, true)
                 GameTooltip:Show()
             end)
 
@@ -379,6 +455,8 @@ function BankMail_Search:ShowResults(results)
         button.icon:SetTexture(result.texture)
         button.count:SetText(result.count > 1 and result.count or "")
         button.itemLink = result.itemLink
+        button.itemID = result.itemID
+        button.name = result.name
         button.mailIndex = result.mailIndex
         button.attachIndex = result.attachIndex
         button:Show()
@@ -440,6 +518,23 @@ function BankMail_Search:OnSearchTextChanged(text)
         self:HideResults()
     end
 end
+
+-- Handle mail inbox updates
+updateFrame:SetScript("OnEvent", function(self, event)
+    if event == "MAIL_INBOX_UPDATE" then
+        -- Add a small delay to ensure mail data is fully updated
+        C_Timer.After(0.2, function()
+            if BankMail_Search.currentSearchText ~= "" then
+                -- Refresh current search results
+                local results = SearchInbox(BankMail_Search.currentSearchText)
+                BankMail_Search:ShowResults(results)
+            elseif BankMail_Search.resultsVisible then
+                -- If we're showing all items, refresh that view
+                BankMail_Search:ShowAllItems()
+            end
+        end)
+    end
+end)
 
 -- Initialize module
 function BankMail_Search:Init()

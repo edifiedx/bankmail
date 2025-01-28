@@ -1,5 +1,14 @@
 # BankMail Changelog
 
+## [0.12.2] - (2025-01-27)
+
+- Enhanced mail search functionality:
+  - Added right-click support to take all stacks of the same item
+  - Added auto-refresh when taking items from search results
+  - Improved tooltip to show left/right click options
+  - Added sorting to take items from oldest mail first
+  - Fixed search results not updating after taking items
+
 ## [0.12.1] - (2025-01-27)
 
 - Fixed an issue with search box Escape key behavior
