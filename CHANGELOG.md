@@ -1,5 +1,12 @@
 # BankMail Changelog
 
+## [0.12.4] - (2025-01-27)
+
+- Fixed an issue where search box focus could not be cleared
+- Fixed Escape key behavior to properly clear focus before closing window
+- Added option to control Search Auto-focus behavior
+- Added debugging to focus state transitions
+
 ## [0.12.3] - (2025-01-27)
 
 - Fixed an issue where search debug was ignoring debug setting

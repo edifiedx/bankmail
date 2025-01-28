@@ -283,8 +283,23 @@ function BankMail_Search:CreateSearchUI()
         self.searchBox = CreateFrame("EditBox", "BankMailSearchBox", InboxFrame, "SearchBoxTemplate")
         self.searchBox:SetPoint("TOP", InboxFrame, "TOP", -35, -30)
         self.searchBox:SetSize(175, 20)
-        self.searchBox:SetAutoFocus(true)
+        self.searchBox:SetAutoFocus(false)
         self.searchBox.Instructions:SetText("search...") -- omg, maybe?
+
+        -- focus on show
+        self.searchBox:SetScript("OnShow", function(self)
+            if BankMailDB and BankMailDB.enableSearchAutoFocus then
+                self:SetFocus()
+            end
+        end)
+
+        -- drop focus on click away
+        self.searchBox:EnableMouse(true)
+        self.searchBox:SetScript("OnEditFocusLost", function(self)
+            if self:GetText() == "" then
+                self.Instructions:SetText("search...")
+            end
+        end)
 
         -- browse button
         if not self.browseButton then
@@ -342,16 +357,40 @@ function BankMail_Search:CreateSearchUI()
 
         -- Handle escape and enter
         self.searchBox:SetScript("OnEscapePressed", function(self)
+            if BankMailDB and BankMailDB.debugMode then
+                print("BankMail Search: Escape pressed")
+                print("- Has text:", self:GetText() ~= "")
+                print("- Has focus:", self:HasFocus())
+            end
+
             if self:GetText() ~= "" then
+                if BankMailDB and BankMailDB.debugMode then
+                    print("BankMail Search: Clearing text and focus")
+                end
                 self:SetText("")
                 self:ClearFocus()
                 BankMail_Search:HideResults()
-            else
-                HideUIPanel(MailFrame)
+                return
             end
+
+            if self:HasFocus() then
+                if BankMailDB and BankMailDB.debugMode then
+                    print("BankMail Search: Dropping focus")
+                end
+                self:ClearFocus()
+                return
+            end
+
+            if BankMailDB and BankMailDB.debugMode then
+                print("BankMail Search: Closing mail window")
+            end
+            HideUIPanel(MailFrame)
         end)
 
         self.searchBox:SetScript("OnEnterPressed", function(self)
+            if BankMailDB and BankMailDB.debugMode then
+                print("BankMail Search: Enter pressed, clearing focus")
+            end
             self:ClearFocus()
         end)
     end

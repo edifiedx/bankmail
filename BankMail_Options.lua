@@ -241,6 +241,19 @@ function Options.Show(self)
         enableAutoAttachmentDetails:SetPoint("TOPLEFT", enableAutoAttach, "BOTTOMLEFT", 0, -8)
         self.enableAutoAttachmentDetails = enableAutoAttachmentDetails
 
+        local enableSearchAutoFocus = checkbox(
+            "Enable Search Auto-focus",
+            "Automatically focus the search box when opening mail",
+            "When enabled, the search box will automatically gain focus when you open your mailbox.\n\nWhen disabled, you'll need to click the search box to start searching.",
+            true,
+            function(_, checked)
+                BankMailDB.enableSearchAutoFocus = checked
+                print("BankMail: Search auto-focus " .. (checked and "enabled" or "disabled"))
+            end
+        )
+        enableSearchAutoFocus:SetPoint("TOPLEFT", enableAutoAttachmentDetails, "BOTTOMLEFT", 0, -8)
+        self.enableSearchAutoFocus = enableSearchAutoFocus
+
         -- debug mode
         local debugMode = checkbox(
             "Debug Mode",
@@ -252,7 +265,7 @@ function Options.Show(self)
                 BankMailDB.debugMode = checked
                 print("BankMail: Debug mode " .. (checked and "enabled" or "disabled"))
             end)
-        debugMode:SetPoint("TOPLEFT", enableAutoAttachmentDetails, "BOTTOMLEFT", 0, -8)
+        debugMode:SetPoint("TOPLEFT", enableSearchAutoFocus, "BOTTOMLEFT", 0, -8)
 
         -- Create Restore Defaults button
         local defaultsButton = CreateFrame("Button", nil, self, "UIPanelButtonTemplate")
@@ -322,6 +335,7 @@ function Options.Show(self)
     if BankMailDB.debugMode == nil then BankMailDB.debugMode = false end
     if BankMailDB.enableAutoAttach == nil then BankMailDB.enableAutoAttach = true end
     if BankMailDB.enableAutoAttachmentDetails == nil then BankMailDB.enableAutoAttachmentDetails = true end
+    if BankMailDB.enableSearchAutoFocus == nil then BankMailDB.enableSearchAutoFocus = true end
 
     -- Update UI to match current values
     self.enableAddon:SetChecked(BankMailDB.enabled)
@@ -330,6 +344,7 @@ function Options.Show(self)
     self.enableCoinSubject:SetChecked(BankMailDB.enableCoinSubject)
     self.enableAutoAttach:SetChecked(BankMailDB.enableAutoAttach)
     self.enableAutoAttachmentDetails:SetChecked(BankMailDB.enableAutoAttachmentDetails)
+    self.enableSearchAutoFocus:SetChecked(BankMailDB.enableSearchAutoFocus)
     self.debugMode:SetChecked(BankMailDB.debugMode)
 end
 
