@@ -1,4 +1,4 @@
-## Interface: 11505
+## Interface: 11506
 ## Title: BankMail
 ## Notes: Auto select bank character as mail recipient, collect mail easier.
 ## SavedVariables: BankMailDB

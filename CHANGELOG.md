@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.12.5] - (2025-01-28)
+
+- Interface version update for 1.15.6
+
 ## [0.12.4] - (2025-01-27)
 
 - Fixed an issue where search box focus could not be cleared
