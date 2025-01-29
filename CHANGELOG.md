@@ -1,5 +1,12 @@
 # BankMail Changelog
 
+## [0.12.6] - (2025-01-28)
+
+- Fixed an issue where auction house mail could cause UI elements to overlap
+- Added improved handling of mail loading states
+- Enhanced mail tab switching logic to be more reliable
+- Added additional debug logging for mail state transitions
+
 ## [0.12.5] - (2025-01-28)
 
 - Interface version update for 1.15.6

@@ -40,13 +40,52 @@ function AutoSwitch:GetDefaultRecipient()
     return BankMailDB.accountDefaultRecipient
 end
 
+-- Helper function to ensure clean UI state
+local function CleanupMailFrameState()
+    -- Hide all potential overlapping elements
+    if InboxFrame then
+        InboxFrame:Hide()
+    end
+    if SendMailFrame then
+        SendMailFrame:Hide()
+    end
+
+    -- Reset tab highlights
+    if MailFrameTab1 then
+        PanelTemplates_DeselectTab(MailFrameTab1)
+    end
+    if MailFrameTab2 then
+        PanelTemplates_DeselectTab(MailFrameTab2)
+    end
+end
+
 -- Function to check for unread mail
 local function HasUnreadMail()
     local numItems = GetInboxNumItems()
     for i = 1, numItems do
-        local _, _, _, _, _, _, _, _, wasRead = GetInboxHeaderInfo(i)
-        if not wasRead then
-            return true
+        -- Get full header info
+        local _, _, sender, subject, money, _, daysLeft, _, wasRead = GetInboxHeaderInfo(i)
+
+        -- Debug logging if enabled
+        if BankMailDB and BankMailDB.debugMode then
+            print(string.format("BankMail Debug: Mail %d - From: %s, Subject: %s, Money: %s, Read: %s",
+                i, sender or "nil", subject or "nil", tostring(money), tostring(wasRead)))
+        end
+
+        -- If header info isn't fully loaded yet, consider it as having unread mail
+        if not wasRead or wasRead == nil then
+            -- Additional check: if it's auction mail, wait for full details
+            if subject and (subject:find("Auction") or subject:find("auction")) then
+                if BankMailDB and BankMailDB.debugMode then
+                    print("BankMail Debug: Found unread auction mail, waiting for details")
+                end
+                return true
+            end
+
+            -- For non-auction mail, proceed with normal unread check
+            if wasRead == false then
+                return true
+            end
         end
     end
     return false
@@ -163,18 +202,41 @@ function AutoSwitch:CheckAndSwitchTab()
     self.mailLoadTimer = C_Timer.NewTimer(0.3, function()
         if not MailFrame:IsVisible() then return end
 
-        if not HasUnreadMail() then
-            -- Ensure the UI elements exist before trying to use them
-            if MailFrameTab2 then
-                MailFrameTab2:Click()
-                self:AutoFillRecipient()
+        -- First check if mail data is still loading
+        local numItems = GetInboxNumItems()
+        if numItems > 0 then
+            local _, _, _, subject = GetInboxHeaderInfo(1)
+            if not subject then
+                -- Mail data still loading, try again shortly
+                if BankMailDB and BankMailDB.debugMode then
+                    print("BankMail Debug: Mail data still loading, retrying...")
+                end
+                C_Timer.After(0.2, function()
+                    self:CheckAndSwitchTab()
+                end)
+                return
             end
         end
-        -- Set mail session timestamp regardless of whether we switched tabs
-        self.currentMailSession = time()
-        if BankMailDB.debugMode then
-            print("BankMail: New mail session started at " .. date("[%I:%M:%S %p]", self.currentMailSession))
+
+        if not HasUnreadMail() then
+            -- Clean up UI state before switching
+            CleanupMailFrameState()
+
+            C_Timer.After(0.05, function()
+                if MailFrameTab2 then
+                    MailFrameTab2:Click()
+                    C_Timer.After(0.1, function()
+                        self:AutoFillRecipient()
+                    end)
+                end
+            end)
+        else
+            if BankMailDB and BankMailDB.debugMode then
+                print("BankMail Debug: Unread mail detected, staying on inbox tab")
+            end
         end
+
+        self.currentMailSession = time()
         self.mailLoadTimer = nil
     end)
 end
