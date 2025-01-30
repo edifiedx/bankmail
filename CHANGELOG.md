@@ -1,5 +1,15 @@
 # BankMail Changelog
 
+## [0.12.9] - (2025-01-29)
+
+- Enhanced search module state management:
+  - Fixed inconsistent search behavior when clearing results
+  - Added state persistence between mail frame sessions
+  - Improved search clear button functionality
+  - Fixed browse/hide button state consistency
+  - Ensured search results always match current search text
+  - Added proper state cleanup when closing mail frame
+
 ## [0.12.8] - (2025-01-29)
 
 - Enhanced search results display:

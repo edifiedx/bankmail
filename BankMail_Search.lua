@@ -4,7 +4,11 @@ local BankMail_Search = {
     initialized = false,
     currentSearchText = "",
     isSearching = false,
-    resultsVisible = false
+    resultsVisible = false,
+    lastSearchState = {
+        wasVisible = false,
+        searchText = ""
+    }
 }
 _G[addonName .. "_Search"] = BankMail_Search
 
@@ -15,6 +19,8 @@ local TAKE_ALL_DELAY = 0.3
 -- Create a frame for handling updates
 local updateFrame = CreateFrame("Frame")
 updateFrame:RegisterEvent("MAIL_INBOX_UPDATE")
+updateFrame:RegisterEvent("MAIL_CLOSED")
+updateFrame:RegisterEvent("MAIL_SHOW")
 local searchTimer = nil
 
 -- Helper function to collect item data from a mail
@@ -274,6 +280,38 @@ local function CreateSearchResultButton(parent)
     return button
 end
 
+function BankMail_Search:SaveSearchState()
+    self.lastSearchState = {
+        wasVisible = self.resultsVisible,
+        searchText = self.searchBox and self.searchBox:GetText() or ""
+    }
+
+    if BankMailDB and BankMailDB.debugMode then
+        print("BankMail Search: Saved state - ",
+            "Visible:", self.lastSearchState.wasVisible,
+            "Text:", self.lastSearchState.searchText
+        )
+    end
+end
+
+function BankMail_Search:ClearSearch(updateUI)
+    if BankMailDB and BankMailDB.debugMode then
+        print("BankMail Search: Clearing search state")
+    end
+
+    self.currentSearchText = ""
+    self.isSearching = false
+    self.resultsVisible = false
+
+    if updateUI and self.searchBox then
+        self.searchBox:SetText("")
+        self.searchBox:ClearFocus()
+        self.searchBox.Instructions:SetText("search...")
+    end
+
+    self:HideResults()
+end
+
 -- Create the search interface
 function BankMail_Search:CreateSearchUI()
     -- Create main container frame if it doesn't exist
@@ -311,6 +349,13 @@ function BankMail_Search:CreateSearchUI()
             if BankMailDB and BankMailDB.enableSearchAutoFocus then
                 self:SetFocus()
             end
+        end)
+
+        self.searchBox.clearButton:SetScript("OnClick", function(self)
+            local editBox = self:GetParent()
+            editBox:SetText("")
+            editBox:ClearFocus()
+            BankMail_Search:OnSearchTextChanged("")
         end)
 
         -- drop focus on click away
@@ -352,7 +397,7 @@ function BankMail_Search:CreateSearchUI()
             -- Handle button click with toggle behavior
             self.browseButton:SetScript("OnClick", function()
                 if self.resultsVisible then
-                    self:HideResults()
+                    self:ClearSearch(true)
                 else
                     if BankMailDB and BankMailDB.debugMode then
                         print("BankMail Search: Show All button clicked")
@@ -387,9 +432,7 @@ function BankMail_Search:CreateSearchUI()
                 if BankMailDB and BankMailDB.debugMode then
                     print("BankMail Search: Clearing text and focus")
                 end
-                self:SetText("")
-                self:ClearFocus()
-                BankMail_Search:HideResults()
+                BankMail_Search:ClearSearch(true)
                 return
             end
 
@@ -538,6 +581,10 @@ function BankMail_Search:ShowResults(results)
     -- Update content height
     local rows = math.ceil(#results / columns)
     self.content:SetHeight(math.max(400, rows * (buttonSize + padding)))
+    -- toggle button text
+    if self.browseButton then
+        self.browseButton:SetText("Hide")
+    end
 end
 
 -- Function to hide search results
@@ -602,6 +649,20 @@ updateFrame:SetScript("OnEvent", function(self, event)
             elseif BankMail_Search.resultsVisible then
                 -- If we're showing all items, refresh that view
                 BankMail_Search:ShowAllItems()
+            end
+        end)
+    elseif event == "MAIL_CLOSED" then
+        BankMail_Search:SaveSearchState()
+        BankMail_Search:ClearSearch(true)
+    elseif event == "MAIL_SHOW" then
+        C_Timer.After(0.2, function()
+            if BankMail_Search.lastSearchState.wasVisible then
+                if BankMail_Search.lastSearchState.searchText ~= "" then
+                    BankMail_Search.searchBox:SetText(BankMail_Search.lastSearchState.searchText)
+                    BankMail_Search:OnSearchTextChanged(BankMail_Search.lastSearchState.searchText)
+                else
+                    BankMail_Search:ShowAllItems()
+                end
             end
         end)
     end
