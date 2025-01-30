@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.12.10] - (2025-01-30)
+
+- Fixed an issue where right-clicking an item in search would not collect all matching items
+
 ## [0.12.9] - (2025-01-29)
 
 - Enhanced search module state management:

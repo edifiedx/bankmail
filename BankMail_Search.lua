@@ -260,12 +260,22 @@ local function CreateSearchResultButton(parent)
                 TakeInboxItem(self.mailIndex, self.attachIndex)
             end
         elseif buttonName == "RightButton" then
-            -- Take all stacks of this item
-            local allResults = SearchInbox(self.name:lower())
-            local sameItemStacks = {}
+            -- current search results
+            local currentResults = {}
+            for _, btn in ipairs(BankMail_Search.activeButtons) do
+                if btn:IsShown() then
+                    table.insert(currentResults, {
+                        itemID = btn.itemID,
+                        mailIndex = btn.mailIndex,
+                        attachIndex = btn.attachIndex,
+                        name = btn.name
+                    })
+                end
+            end
 
             -- Find all stacks of the same item
-            for _, result in ipairs(allResults) do
+            local sameItemStacks = {}
+            for _, result in ipairs(currentResults) do
                 if result.itemID == self.itemID then
                     table.insert(sameItemStacks, result)
                 end
