@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.12.7] - (2025-01-29)
+
+- Fixed an issue where money could not be collected with right-click
+
 ## [0.12.6] - (2025-01-28)
 
 - Fixed an issue where auction house mail could cause UI elements to overlap

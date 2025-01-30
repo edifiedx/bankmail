@@ -38,8 +38,8 @@ end
 
 -- Function to take all attachments from a mail
 local function TakeAllAttachments(mailIndex)
-    local hasItem = select(8, GetInboxHeaderInfo(mailIndex))
-    if not hasItem then return end
+    local _, _, _, _, money, _, _, hasItem = GetInboxHeaderInfo(mailIndex)
+    if not hasItem and not (money and money > 0) then return end
 
     if BankMailDB.debugMode then
         print("BankMail: Starting mail", mailIndex)
