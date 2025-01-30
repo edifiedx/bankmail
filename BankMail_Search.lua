@@ -9,8 +9,7 @@ local BankMail_Search = {
 _G[addonName .. "_Search"] = BankMail_Search
 
 -- Constants
-local SEARCH_UPDATE_DELAY = 0.2
-local MAX_RESULTS = 100
+local MAX_RESULTS = 200
 local TAKE_ALL_DELAY = 0.3
 
 -- Create a frame for handling updates
@@ -27,7 +26,7 @@ local function GetMailItems(mailIndex)
     end
 
     -- Get mail header info
-    local _, _, _, _, _, _, _, hasItem = GetInboxHeaderInfo(mailIndex)
+    local _, _, sender, subject, _, _, daysLeft, hasItem = GetInboxHeaderInfo(mailIndex)
 
     if BankMailDB and BankMailDB.debugMode then
         print("BankMail Search: Mail", mailIndex, "hasItem:", tostring(hasItem))
@@ -48,7 +47,7 @@ local function GetMailItems(mailIndex)
 
         local itemLink = GetInboxItemLink(mailIndex, attachIndex)
         if itemLink then
-            local name, itemID, texture, count = GetInboxItem(mailIndex, attachIndex)
+            local name, itemID, texture, count, quality = GetInboxItem(mailIndex, attachIndex)
 
             if name then
                 if BankMailDB and BankMailDB.debugMode then
@@ -64,7 +63,11 @@ local function GetMailItems(mailIndex)
                     texture = texture,
                     count = count or 1,
                     mailIndex = mailIndex,
-                    attachIndex = attachIndex
+                    attachIndex = attachIndex,
+                    sender = sender,
+                    subject = subject,
+                    daysLeft = daysLeft,
+                    quality = quality
                 })
             end
         else
@@ -191,6 +194,14 @@ local function CreateSearchResultButton(parent)
     background:SetAllPoints()
     background:SetTexture("Interface\\Buttons\\UI-Quickslot")
 
+    -- Create border texture
+    local border = button:CreateTexture(nil, "OVERLAY")
+    border:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    border:SetBlendMode("ADD")
+    border:SetPoint("CENTER")
+    border:SetSize(55, 55)
+    button.border = border
+
     -- Create icon texture
     local icon = button:CreateTexture(nil, "ARTWORK")
     icon:SetSize(32, 32)
@@ -213,9 +224,18 @@ local function CreateSearchResultButton(parent)
         if self.itemLink then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetHyperlink(self.itemLink)
+            if self.sender then
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine("From: " .. self.sender, 0.9, 0.9, 0.9)
+            end
+            if self.subject then
+                GameTooltip:AddLine("Subject: " .. self.subject, 0.9, 0.9, 0.9)
+            end
+            local roundDaysLeft = string.format("%.1f", self.daysLeft)
+            GameTooltip:AddLine("Days Left: " .. roundDaysLeft, 0.9, 0.9, 0.9)
             GameTooltip:AddLine(" ")
-            GameTooltip:AddLine("Left-click to take this stack", 0.8, 0.8, 0.8)
-            GameTooltip:AddLine("Right-click to take all stacks", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("Left-click to take this stack", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine("Right-click to take all stacks", 0.7, 0.7, 0.7)
             GameTooltip:Show()
         end
     end)
@@ -493,6 +513,13 @@ function BankMail_Search:ShowResults(results)
             col * (buttonSize + padding) + padding + containerOffset,
             -(row * (buttonSize + padding) + padding))
 
+        if result.quality and result.quality > 1 then
+            local r, g, b = C_Item.GetItemQualityColor(result.quality)
+            button.border:SetVertexColor(r, g, b, 1)
+            button.border:Show()
+        else
+            button.border:Hide()
+        end
         button.icon:SetTexture(result.texture)
         button.count:SetText(result.count > 1 and result.count or "")
         button.itemLink = result.itemLink
@@ -500,6 +527,9 @@ function BankMail_Search:ShowResults(results)
         button.name = result.name
         button.mailIndex = result.mailIndex
         button.attachIndex = result.attachIndex
+        button.sender = result.sender
+        button.subject = result.subject
+        button.daysLeft = result.daysLeft
         button:Show()
 
         table.insert(self.activeButtons, button)

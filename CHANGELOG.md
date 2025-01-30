@@ -1,5 +1,12 @@
 # BankMail Changelog
 
+## [0.12.8] - (2025-01-29)
+
+- Enhanced search results display:
+  - Added quality-based colored borders for items
+  - Added sender, subject, and days remaining to item tooltips
+  - Increased maximum search results from 100 to 200
+
 ## [0.12.7] - (2025-01-29)
 
 - Fixed an issue where money could not be collected with right-click
