@@ -12,6 +12,7 @@ local addonName = "BankMail"
 local BankMail_Money = _G[addonName .. "_Money"]
 local BankMail_AutoSwitch = _G[addonName .. "_AutoSwitch"]
 local BankMail_AutoAttach = _G[addonName .. "_AutoAttach"]
+local BankMail_AutoFill = _G[addonName .. "_AutoFill"]
 local BankMail_Options = _G[addonName .. "_Options"]
 local BankMail_Search = _G[addonName .. "_Search"]
 
@@ -206,6 +207,12 @@ frame:SetScript("OnEvent", function(self, event, ...)
             BankMail_AutoSwitch:Init()
         else
             print("BankMail: Warning - AutoSwitch module not found")
+        end
+
+        if BankMail_AutoFill and BankMail_AutoFill.Init then
+            BankMail_AutoFill:Init()
+        else
+            print("BankMail: Warning - AutoFill module not found")
         end
 
         if BankMail_AutoAttach and BankMail_AutoAttach.Init then

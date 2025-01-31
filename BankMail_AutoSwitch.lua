@@ -3,17 +3,17 @@ local addonName = "BankMail"
 local AutoSwitch = {
     initialized = false,
     mailLoadTimer = nil,
-    currentMailSession = false
+    currentMailSession = nil
 }
 _G[addonName .. "_AutoSwitch"] = AutoSwitch
 
 -- Local variables
-local currentRealm
-local currentChar
+local currentRealm = GetRealmName()
+local currentChar = UnitName("player")
 
 -- Helper function to check if current character is the bank character
 local function IsCurrentCharacterBank()
-    local currentCharKey = AutoSwitch:GetCharacterKey()
+    local currentCharKey = currentChar .. "-" .. currentRealm
     local bankChar = BankMailDB.accountDefaultRecipient
 
     -- If bank character doesn't include realm, append current realm
@@ -22,22 +22,6 @@ local function IsCurrentCharacterBank()
     end
 
     return bankChar and currentCharKey == bankChar
-end
-
--- Function to get current character's full name
-function AutoSwitch:GetCharacterKey()
-    return currentChar .. "-" .. currentRealm
-end
-
--- Function to get default recipient for current character
-function AutoSwitch:GetDefaultRecipient()
-    local charKey = self:GetCharacterKey()
-    -- First check character-specific recipient
-    if BankMailDB.characterRecipients[charKey] then
-        return BankMailDB.characterRecipients[charKey]
-    end
-    -- Fall back to account-wide default
-    return BankMailDB.accountDefaultRecipient
 end
 
 -- Helper function to ensure clean UI state
@@ -91,63 +75,6 @@ local function HasUnreadMail()
     return false
 end
 
--- Function to auto-fill recipient
-function AutoSwitch:AutoFillRecipient()
-    if not BankMailDB.enabled then return end
-
-    -- Check if we should disable auto-fill for bank character
-    if not BankMailDB.enableAutoSwitchOnBank and IsCurrentCharacterBank() then
-        if BankMailDB.debugMode then
-            print("BankMail: Auto-fill disabled for bank character")
-        end
-        return
-    end
-
-    -- Only auto-fill if the recipient field is empty
-    if SendMailNameEditBox and SendMailNameEditBox:GetText() == "" then
-        local recipient = self:GetDefaultRecipient()
-        if recipient then
-            SendMailNameEditBox:SetText(recipient)
-            -- Add delay before focusing subject box
-            C_Timer.After(0.1, function()
-                if SendMailSubjectEditBox then
-                    SendMailSubjectEditBox:SetFocus()
-                end
-            end)
-        end
-    end
-end
-
--- Function to format money amount as text
-local function FormatMoneyText(copper)
-    if not copper or copper == 0 then return "0c" end
-
-    local gold = math.floor(copper / 10000)
-    local silver = math.floor((copper % 10000) / 100)
-    local remainingCopper = copper % 100
-
-    local parts = {}
-    if gold > 0 then table.insert(parts, gold .. "g") end
-    if silver > 0 then table.insert(parts, silver .. "s") end
-    if remainingCopper > 0 then table.insert(parts, remainingCopper .. "c") end
-
-    return table.concat(parts, " ")
-end
-
--- Function to auto-fill subject when money is attached
-local function AutoFillMoneySubject()
-    if not BankMailDB or not BankMailDB.enabled or BankMailDB.enableCoinSubject == false then return end
-
-    local currentSubject = SendMailSubjectEditBox:GetText()
-    -- Proceed if subject is empty or matches our coin format
-    if currentSubject ~= "" and not currentSubject:match("^coin: .*[gsc]$") then return end
-
-    local moneyAmount = MoneyInputFrame_GetCopper(SendMailMoney)
-    if moneyAmount and moneyAmount > 0 then
-        SendMailSubjectEditBox:SetText("coin: " .. FormatMoneyText(moneyAmount))
-    end
-end
-
 -- CheckAndSwitchTab function
 function AutoSwitch:CheckAndSwitchTab()
     -- Validate requirements before proceeding
@@ -155,47 +82,22 @@ function AutoSwitch:CheckAndSwitchTab()
         return
     end
 
-    if not currentRealm or not currentChar then
-        if BankMailDB.debugMode then
-            print("BankMail: Missing character data, aborting tab switch")
-        end
-        return
-    end
-
     if not MailFrame:IsVisible() then
         return
     end
 
-    -- Don't switch if we're already in a mail session
-    if self.currentMailSession then
+    -- Check if we should disable auto-switch for bank character
+    if not BankMailDB.enableAutoSwitchOnBank and IsCurrentCharacterBank() then
         if BankMailDB.debugMode then
-            local now = time()
-            local sessionAge = now - self.currentMailSession
-            local startTime = date("[%I:%M:%S %p]", self.currentMailSession)
-            local currentTime = date("[%I:%M:%S %p]", now)
-            print(string.format(
-                "BankMail: Mail session active since %s (current time %s, %d seconds ago), skipping auto-switch",
-                startTime, currentTime, sessionAge))
+            print("BankMail: Auto-switch disabled for bank character")
         end
         return
-    end
-
-    if BankMailDB.debugMode then
-        print("BankMail: Starting fresh mail session check at " .. date("[%I:%M:%S %p]"))
     end
 
     -- Cancel any pending timer
     if self.mailLoadTimer then
         self.mailLoadTimer:Cancel()
         self.mailLoadTimer = nil
-    end
-
-    -- Check if we should disable auto-switch for bank character
-    if BankMailDB.disableAutoSwitchOnBank and IsCurrentCharacterBank() then
-        if BankMailDB.debugMode then
-            print("BankMail: Auto-switch disabled for bank character")
-        end
-        return
     end
 
     -- Set up new timer with error handling
@@ -225,9 +127,6 @@ function AutoSwitch:CheckAndSwitchTab()
             C_Timer.After(0.05, function()
                 if MailFrameTab2 then
                     MailFrameTab2:Click()
-                    C_Timer.After(0.1, function()
-                        self:AutoFillRecipient()
-                    end)
                 end
             end)
         else
@@ -236,19 +135,14 @@ function AutoSwitch:CheckAndSwitchTab()
             end
         end
 
-        self.currentMailSession = time()
         self.mailLoadTimer = nil
     end)
 end
 
 function AutoSwitch:StartMailLoad()
     if BankMailDB.debugMode then
-        print("BankMail: Starting mail load - resetting session from " ..
-            (self.currentMailSession and date("[%I:%M:%S %p]", self.currentMailSession) or "nil"))
+        print("BankMail: Starting mail load")
     end
-
-    -- Reset session state when starting a new mail load
-    self.currentMailSession = nil
 
     if self.mailLoadTimer then
         self.mailLoadTimer:Cancel()
@@ -264,7 +158,7 @@ function AutoSwitch:FinishMailLoad()
         print("BankMail: - Mail Frame Visible:", MailFrame:IsVisible())
         print("BankMail: - Has Unread Mail:", HasUnreadMail())
         print("BankMail: - Is Bank Character:", IsCurrentCharacterBank())
-        print("BankMail: - Auto-switch Disabled for Bank:", BankMailDB.disableAutoSwitchOnBank)
+        print("BankMail: - Auto-switch Disabled for Bank:", not BankMailDB.enableAutoSwitchOnBank)
     end
     self:CheckAndSwitchTab()
 end
@@ -276,30 +170,6 @@ function AutoSwitch:Init()
         return
     end
 
-    -- Initialize character and realm data
-    currentRealm = GetRealmName()
-    currentChar = UnitName("player")
-
-    -- Hook the mail tab buttons to ensure auto-fill happens when manually switching tabs
-    if MailFrameTab2 then
-        MailFrameTab2:HookScript("OnClick", function()
-            C_Timer.After(0.1, function()
-                AutoSwitch:AutoFillRecipient()
-            end)
-        end)
-    end
-
-    -- Hook money input fields for subject autofill
-    if SendMailMoneyGold then
-        SendMailMoneyGold:HookScript("OnTextChanged", AutoFillMoneySubject)
-    end
-    if SendMailMoneySilver then
-        SendMailMoneySilver:HookScript("OnTextChanged", AutoFillMoneySubject)
-    end
-    if SendMailMoneyCopper then
-        SendMailMoneyCopper:HookScript("OnTextChanged", AutoFillMoneySubject)
-    end
-
     if BankMailDB.debugMode then
         print("BankMail AutoSwitch: Initialized for", currentChar, "on", currentRealm)
     end
@@ -307,4 +177,4 @@ function AutoSwitch:Init()
     self.initialized = true
 end
 
-return AutoSwitch
+return AutoSwitch -- Check if we're in an active mail session

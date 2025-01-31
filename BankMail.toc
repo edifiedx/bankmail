@@ -6,6 +6,7 @@
 
 BankMail_AutoSwitch.lua
 BankMail_AutoAttach.lua
+BankMail_AutoFill.lua
 BankMail_Money.lua
 BankMail_Options.lua
 BankMail_Search.lua

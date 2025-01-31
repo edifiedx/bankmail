@@ -1,5 +1,12 @@
 # BankMail Changelog
 
+## [0.13.0] - (2025-01-31)
+
+- Created new BankMail_AutoFill module
+- Fixed recipient auto-fill not working after sending mail
+- Streamlined AutoSwitch module to handle only tab switching
+- Improved code organization and reduced module coupling
+
 ## [0.12.10] - (2025-01-30)
 
 - Fixed an issue where right-clicking an item in search would not collect all matching items
