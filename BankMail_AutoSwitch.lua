@@ -10,6 +10,7 @@ _G[addonName .. "_AutoSwitch"] = AutoSwitch
 -- Local variables
 local currentRealm = GetRealmName()
 local currentChar = UnitName("player")
+local isInitialLoad = false
 
 -- Helper function to check if current character is the bank character
 local function IsCurrentCharacterBank()
@@ -148,11 +149,32 @@ function AutoSwitch:StartMailLoad()
         self.mailLoadTimer:Cancel()
         self.mailLoadTimer = nil
     end
+
+    -- Set initial load flag
+    isInitialLoad = true
+
+    -- Set up a timeout to clear initial load state
+    C_Timer.After(2.0, function()
+        if isInitialLoad then
+            if BankMailDB.debugMode then
+                print("BankMail: Initial load timeout reached, clearing state")
+            end
+            isInitialLoad = false
+        end
+    end)
 end
 
 function AutoSwitch:FinishMailLoad()
+    -- Only proceed if we're in initial load
+    if not isInitialLoad then
+        if BankMailDB.debugMode then
+            print("BankMail: Ignoring mail update - not in initial load")
+        end
+        return
+    end
+
     if BankMailDB.debugMode then
-        print("BankMail: Finishing mail load")
+        print("BankMail: Finishing initial mail load")
         print("BankMail: Status:")
         print("BankMail: - Addon Enabled:", BankMailDB.enabled)
         print("BankMail: - Mail Frame Visible:", MailFrame:IsVisible())
@@ -160,6 +182,11 @@ function AutoSwitch:FinishMailLoad()
         print("BankMail: - Is Bank Character:", IsCurrentCharacterBank())
         print("BankMail: - Auto-switch Disabled for Bank:", not BankMailDB.enableAutoSwitchOnBank)
     end
+
+    -- Clear initial load state
+    isInitialLoad = false
+
+    -- Perform the tab switch check
     self:CheckAndSwitchTab()
 end
 

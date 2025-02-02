@@ -1,5 +1,12 @@
 # BankMail Changelog
 
+## [0.13.1] - (2025-02-01)
+
+- Fixed an issue in AutoSwitch module:
+  - Prevented incorrect tab switching when taking items from search
+  - Added initial load state tracking for mailbox opening
+  - Limited auto-switch behavior to initial mailbox load only
+
 ## [0.13.0] - (2025-01-31)
 
 - Created new BankMail_AutoFill module
