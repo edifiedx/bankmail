@@ -193,7 +193,7 @@ end
 local function CreateSearchResultButton(parent)
     local button = CreateFrame("Button", nil, parent)
     button:SetSize(37, 37)
-    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForClicks("AnyUp")
 
     -- Add button background (slot texture)
     local background = button:CreateTexture(nil, "BACKGROUND")
@@ -242,6 +242,7 @@ local function CreateSearchResultButton(parent)
             GameTooltip:AddLine(" ")
             GameTooltip:AddLine("Left-click to take this stack", 0.7, 0.7, 0.7)
             GameTooltip:AddLine("Right-click to take all stacks", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine("Middle-click to open mail this item is attached to", 0.7, 0.7, 0.7)
             GameTooltip:Show()
         end
     end)
@@ -252,12 +253,51 @@ local function CreateSearchResultButton(parent)
 
     -- Add click handling
     button:SetScript("OnClick", function(self, buttonName)
-        if not self.itemID then return end
+        if BankMailDB and BankMailDB.debugMode then
+            print("BankMail Search: Button clicked with:", buttonName)
+        end
+
+        if not self.itemID then
+            if BankMailDB and BankMailDB.debugMode then
+                print("BankMail Search: No itemID found")
+            end
+            return
+        end
 
         if buttonName == "LeftButton" then
             -- Take single stack
             if self.mailIndex and self.attachIndex then
                 TakeInboxItem(self.mailIndex, self.attachIndex)
+            end
+        elseif buttonName == "MiddleButton" then
+            -- Open the parent mail message
+            if self.mailIndex then
+                if BankMailDB and BankMailDB.debugMode then
+                    print("BankMail Search: Attempting to open mail at index:", self.mailIndex)
+                end
+
+                -- First hide our search results
+                BankMail_Search:HideResults()
+
+                -- Make sure we're on the Inbox tab
+                if MailFrameTab1 then
+                    MailFrameTab1:Click()
+                end
+
+                -- Small delay to ensure UI is ready
+                C_Timer.After(0.1, function()
+                    -- Find the corresponding mail button and click it
+                    local mailButton = _G["MailItem" .. ((self.mailIndex - 1) % 7 + 1) .. "Button"]
+                    if mailButton then
+                        -- Set the correct index and click it
+                        mailButton.index = self.mailIndex
+                        mailButton:Click("LeftButton")
+                    end
+                end)
+            else
+                if BankMailDB and BankMailDB.debugMode then
+                    print("BankMail Search: No mailIndex found for middle click")
+                end
             end
         elseif buttonName == "RightButton" then
             -- current search results

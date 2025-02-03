@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.13.2] - (2025-02-02)
+
+- Added middle-click support to open mail messages directly from search results
+
 ## [0.13.1] - (2025-02-01)
 
 - Fixed an issue in AutoSwitch module:
