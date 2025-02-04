@@ -508,6 +508,92 @@ function BankMail_Search:CreateSearchUI()
         end)
     end
 
+    -- Create sort bar
+    -- Create sort bar
+    if not self.sortBar then
+        -- Create sort bar frame
+        self.sortBar = CreateFrame("Frame", "BankMailSearchSortBar", self.container, "BackdropTemplate")
+        self.sortBar:SetHeight(24)
+        self.sortBar:SetPoint("TOPLEFT", self.container, "TOPLEFT", 8, -8)
+        self.sortBar:SetPoint("TOPRIGHT", self.container, "TOPRIGHT", -28, -8)
+
+        -- Add background
+        self.sortBar:SetBackdrop({
+            bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+            tile = true,
+            tileSize = 16,
+            edgeSize = 16,
+            insets = { left = 4, right = 4, top = 4, bottom = 4 }
+        })
+        self.sortBar:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+
+        -- Sort buttons configuration
+        local buttonWidth = 55
+        local padding = 5
+        local currentX = padding
+
+        -- Initialize sort state if not exists
+        if not self.currentSort then
+            self.currentSort = {
+                key = "name",
+                ascending = true
+            }
+        end
+
+        -- Initialize sortButtons table if not exists
+        if not self.sortButtons then
+            self.sortButtons = {}
+        end
+
+        -- Helper function to create sort buttons
+        local function CreateSortButton(text, sortKey)
+            local button = CreateFrame("Button", nil, self.sortBar, "UIPanelButtonTemplate")
+            button:SetSize(buttonWidth, 20)
+            button:SetPoint("LEFT", currentX, 0)
+            button:SetText(text)
+
+            -- Create sort direction indicator
+            local dirIndicator = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            dirIndicator:SetPoint("RIGHT", button, "RIGHT", -2, 0)
+            dirIndicator:SetText("")
+
+            -- Click handling
+            button:SetScript("OnClick", function()
+                if BankMailDB.debugMode then
+                    print("Sort button clicked:", sortKey)
+                end
+
+                BankMail_Search:SortResults(sortKey)
+
+                -- Update all direction indicators
+                for _, btn in pairs(BankMail_Search.sortButtons) do
+                    if btn.dirIndicator then
+                        btn.dirIndicator:SetText("")
+                    end
+                end
+
+                -- Update this button's indicator
+                if BankMail_Search.currentSort.key == sortKey then
+                    dirIndicator:SetText((BankMail_Search.currentSort.ascending and "^") or "v")
+                end
+            end)
+
+            button.dirIndicator = dirIndicator
+            currentX = currentX + buttonWidth + padding
+
+            return button
+        end
+
+        -- Create sort buttons
+        self.sortButtons.name = CreateSortButton("Name", "name")
+        self.sortButtons.age = CreateSortButton("Age", "daysLeft")
+        self.sortButtons.quality = CreateSortButton("Quality", "quality")
+        self.sortButtons.count = CreateSortButton("Count", "count")
+        self.sortButtons.sender = CreateSortButton("Sender", "sender")
+    end
+
+
     -- Create results container (scrolling)
     if not self.scrollFrame then
         self.scrollFrame = CreateFrame("ScrollFrame", "BankMailSearchScroll", self.container,
