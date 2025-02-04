@@ -1,5 +1,12 @@
 # BankMail Changelog
 
+## [0.14.0] - (2025-02-03)
+
+- Added sorting functionality to search module:
+  - Sort by Name, Age, Quality, Count, or Sender
+  - Click headers to toggle ascending(+)/descending(-) order
+  - Sort settings persist during searching
+
 ## [0.13.2] - (2025-02-02)
 
 - Added middle-click support to open mail messages directly from search results
