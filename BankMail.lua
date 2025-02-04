@@ -26,8 +26,11 @@ local defaults = {
     enableCoinSubject = true,
     enableAutoAttach = true,
     enableAutoAttachmentDetails = true,
-    enableSearchAutoFocus = true
-
+    enableSearchAutoFocus = true,
+    defaultSort = {
+        key = "daysLeft",
+        ascending = false
+    }
 }
 
 -- Function to set character-specific default recipient
