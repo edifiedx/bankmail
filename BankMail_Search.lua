@@ -37,6 +37,9 @@ function BankMail_Search:SortResults(sortKey)
         self.currentSort.ascending = true
     end
 
+    -- Mark this as an explicit sort
+    self.currentSort.hasExplicitSort = true
+
     -- Get current results
     local currentResults = {}
     for _, btn in ipairs(self.activeButtons) do
@@ -730,6 +733,61 @@ function BankMail_Search:ShowResults(results)
             print("BankMail Search: UI not initialized, creating...")
         end
         self:CreateSearchUI()
+    end
+
+    -- Apply default sort if no sort is active
+    if not self.currentSort or not self.currentSort.hasExplicitSort then
+        if BankMailDB and BankMailDB.defaultSort then
+            if BankMailDB.debugMode then
+                print("BankMail Search: Applying default sort -",
+                    "Key:", BankMailDB.defaultSort.key,
+                    "Ascending:", BankMailDB.defaultSort.ascending)
+            end
+
+            -- Sort the results using default settings
+            table.sort(results, function(a, b)
+                local aVal = a[BankMailDB.defaultSort.key]
+                local bVal = b[BankMailDB.defaultSort.key]
+
+                -- Handle nil values
+                if aVal == nil and bVal == nil then return false end
+                if aVal == nil then return false end
+                if bVal == nil then return true end
+
+                -- Special handling for different types
+                if type(aVal) == "string" then
+                    aVal = aVal:lower()
+                    bVal = bVal:lower()
+                end
+
+                if BankMailDB.defaultSort.ascending then
+                    return aVal < bVal
+                else
+                    return aVal > bVal
+                end
+            end)
+
+            -- Update sort state to match default
+            self.currentSort = {
+                key = BankMailDB.defaultSort.key,
+                ascending = BankMailDB.defaultSort.ascending,
+                hasExplicitSort = false
+            }
+
+            -- Update sort button indicators
+            if self.sortButtons then
+                for _, btn in pairs(self.sortButtons) do
+                    if btn.UpdateSortIndicator then
+                        btn:UpdateSortIndicator()
+                    end
+                end
+            end
+        end
+    end
+
+    self.resultsVisible = true
+    if self.browseButton then
+        self.browseButton:SetText("Hide")
     end
 
     self.resultsVisible = true

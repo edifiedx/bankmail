@@ -15,7 +15,7 @@ local category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
 Options.Category = category
 
 -- Sort options
-local SORT_KEYS = {
+Options.SORT_KEYS = {
     { text = "Name",    value = "name" },
     { text = "Age",     value = "daysLeft" },
     { text = "Quality", value = "quality" },
@@ -23,7 +23,7 @@ local SORT_KEYS = {
     { text = "Sender",  value = "sender" }
 }
 
-local SORT_DIRECTIONS = {
+Options.SORT_DIRECTIONS = {
     { text = "Ascending",  value = true },
     { text = "Descending", value = false }
 }
@@ -173,7 +173,7 @@ function Options.Show(self)
         local sortKeyDropdown = CreateDropdown(
             self,
             "BankMailSortKeyDropdown",
-            SORT_KEYS,
+            Options.SORT_KEYS,
             BankMailDB.defaultSort and BankMailDB.defaultSort.key or "daysLeft",
             function(value)
                 if not BankMailDB.defaultSort then BankMailDB.defaultSort = {} end
@@ -191,7 +191,7 @@ function Options.Show(self)
         local sortDirDropdown = CreateDropdown(
             self,
             "BankMailSortDirDropdown",
-            SORT_DIRECTIONS,
+            Options.SORT_DIRECTIONS,
             BankMailDB.defaultSort and BankMailDB.defaultSort.ascending or false,
             function(value)
                 if not BankMailDB.defaultSort then BankMailDB.defaultSort = {} end

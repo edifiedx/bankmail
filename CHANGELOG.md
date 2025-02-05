@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.14.1] - (2025-02-04)
+
+- Added default sorting options to the options panel
+
 ## [0.14.0] - (2025-02-03)
 
 - Added sorting functionality to search module:
