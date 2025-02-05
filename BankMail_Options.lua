@@ -14,6 +14,44 @@ panel:Hide()
 local category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
 Options.Category = category
 
+-- Sort options
+local SORT_KEYS = {
+    { text = "Name",    value = "name" },
+    { text = "Age",     value = "daysLeft" },
+    { text = "Quality", value = "quality" },
+    { text = "Count",   value = "count" },
+    { text = "Sender",  value = "sender" }
+}
+
+local SORT_DIRECTIONS = {
+    { text = "Ascending",  value = true },
+    { text = "Descending", value = false }
+}
+
+-- Function to create dropdown menu
+local function CreateDropdown(parent, name, options, defaultValue, onSelect)
+    local dropdown = CreateFrame("Frame", name, parent, "UIDropDownMenuTemplate")
+
+    local function Initialize(self, level)
+        local info = UIDropDownMenu_CreateInfo()
+        for _, option in ipairs(options) do
+            info.text = option.text
+            info.value = option.value
+            info.func = function()
+                UIDropDownMenu_SetSelectedValue(dropdown, option.value)
+                onSelect(option.value)
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end
+
+    UIDropDownMenu_Initialize(dropdown, Initialize)
+    UIDropDownMenu_SetWidth(dropdown, 120)
+    UIDropDownMenu_SetSelectedValue(dropdown, defaultValue)
+
+    return dropdown
+end
+
 -- Add function to set account-wide default recipient
 function Options.SetAccountDefaultRecipient(recipient)
     if not recipient then return nil end
@@ -122,6 +160,65 @@ function Options.Show(self)
         bg:SetAllPoints()
         bg:SetColorTexture(0.03, 0.03, 0.03, 0.75)
 
+        -- Create Default Sort Options section
+        local sortOptionsLabel = self:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        sortOptionsLabel:SetPoint("TOPLEFT", bankCharInput, "BOTTOMLEFT", -2, -20)
+        sortOptionsLabel:SetText("Default Search Sort Options")
+
+        -- Create sort key dropdown
+        local sortKeyLabel = self:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        sortKeyLabel:SetPoint("TOPLEFT", sortOptionsLabel, "BOTTOMLEFT", 2, -8)
+        sortKeyLabel:SetText("Sort By")
+
+        local sortKeyDropdown = CreateDropdown(
+            self,
+            "BankMailSortKeyDropdown",
+            SORT_KEYS,
+            BankMailDB.defaultSort and BankMailDB.defaultSort.key or "daysLeft",
+            function(value)
+                if not BankMailDB.defaultSort then BankMailDB.defaultSort = {} end
+                BankMailDB.defaultSort.key = value
+                print("BankMail: Default sort key set to: " .. value)
+            end
+        )
+        sortKeyDropdown:SetPoint("TOPLEFT", sortKeyLabel, "BOTTOMLEFT", -15, -2)
+
+        -- Create sort direction dropdown
+        local sortDirLabel = self:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        sortDirLabel:SetPoint("LEFT", sortKeyLabel, "RIGHT", 100, 0)
+        sortDirLabel:SetText("Sort Direction")
+
+        local sortDirDropdown = CreateDropdown(
+            self,
+            "BankMailSortDirDropdown",
+            SORT_DIRECTIONS,
+            BankMailDB.defaultSort and BankMailDB.defaultSort.ascending or false,
+            function(value)
+                if not BankMailDB.defaultSort then BankMailDB.defaultSort = {} end
+                BankMailDB.defaultSort.ascending = value
+                print("BankMail: Default sort direction set to: " .. (value and "ascending" or "descending"))
+            end
+        )
+        sortDirDropdown:SetPoint("TOPLEFT", sortDirLabel, "BOTTOMLEFT", -15, -2)
+
+        -- Add tooltips for sort options
+        local function AddDropdownTooltip(frame, title, description)
+            frame:HookScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:AddLine(title, 1, 1, 1)
+                GameTooltip:AddLine(description, nil, nil, nil, true)
+                GameTooltip:Show()
+            end)
+            frame:HookScript("OnLeave", function(self)
+                GameTooltip:Hide()
+            end)
+        end
+
+        AddDropdownTooltip(sortKeyDropdown, "Default Sort Key",
+            "Choose how your search results will be sorted by default.\n\nThis setting will be used whenever you open the search interface.")
+        AddDropdownTooltip(sortDirDropdown, "Default Sort Direction",
+            "Choose whether items should be sorted in ascending (A to Z, lowest to highest)\nor descending (Z to A, highest to lowest) order by default.")
+
         -- Setup autocomplete
         bankCharInput:SetHyperlinksEnabled(false)
         bankCharInput:EnableMouse(true)
@@ -200,7 +297,7 @@ function Options.Show(self)
                 BankMailDB.enableAutoSwitchOnBank = checked
                 print("BankMail: Auto-switch for bank character " .. (checked and "enabled" or "disabled"))
             end)
-        enableAutoSwitch:SetPoint("TOPLEFT", bankCharInput, "BOTTOMLEFT", -2, -8)
+        enableAutoSwitch:SetPoint("TOPLEFT", sortKeyDropdown, "BOTTOMLEFT", -2, -8)
 
         local enableCoinSubject = checkbox(
             "Enable Coin Subject Auto-fill",
@@ -329,6 +426,12 @@ function Options.Show(self)
     -- Update values
     if not BankMailDB then BankMailDB = {} end
     -- Initialize with defaults if not set
+    if not BankMailDB.defaultSort then
+        BankMailDB.defaultSort = {
+            key = "daysLeft",
+            ascending = false
+        }
+    end
     if BankMailDB.enabled == nil then BankMailDB.enabled = true end
     if BankMailDB.enableAutoSwitchOnBank == nil then BankMailDB.enableAutoSwitchOnBank = false end
     if BankMailDB.enableCoinSubject == nil then BankMailDB.enableCoinSubject = true end
