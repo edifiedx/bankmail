@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.14.2] - (2025-02-05)
+
+- Fixed an issue with the default sort dropdown text
+
 ## [0.14.1] - (2025-02-04)
 
 - Added default sorting options to the options panel
