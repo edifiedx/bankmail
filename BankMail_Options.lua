@@ -37,6 +37,7 @@ local function CreateDropdown(parent, name, options, defaultValue, onSelect)
         for _, option in ipairs(options) do
             info.text = option.text
             info.value = option.value
+            info.checked = (option.value == UIDropDownMenu_GetSelectedValue(dropdown))
             info.func = function()
                 UIDropDownMenu_SetSelectedValue(dropdown, option.value)
                 onSelect(option.value)
@@ -48,6 +49,14 @@ local function CreateDropdown(parent, name, options, defaultValue, onSelect)
     UIDropDownMenu_Initialize(dropdown, Initialize)
     UIDropDownMenu_SetWidth(dropdown, 120)
     UIDropDownMenu_SetSelectedValue(dropdown, defaultValue)
+
+    -- Set initial text
+    for _, option in ipairs(options) do
+        if option.value == defaultValue then
+            UIDropDownMenu_SetText(dropdown, option.text)
+            break
+        end
+    end
 
     return dropdown
 end
