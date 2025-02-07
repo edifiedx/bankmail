@@ -305,7 +305,7 @@ function Options.Show(self)
             BankMailDB.enableAutoSwitchOnBank = checked
             print("BankMail: Auto-switch for bank character " .. (checked and "enabled" or "disabled"))
         end)
-    enableAutoSwitch:SetPoint("TOPLEFT", sortKeyDropdown, "BOTTOMLEFT", -2, -8)
+    enableAutoSwitch:SetPoint("TOPLEFT", sortKeyDropdown, "BOTTOMLEFT", 12, -8)
 
     local enableCoinSubject = checkbox(
         "Enable Coin Subject Auto-fill",

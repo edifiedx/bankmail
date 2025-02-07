@@ -1,5 +1,9 @@
 # BankMail Changelog
 
+## [0.14.4] - (2025-02-07)
+
+- Fixed an issue with options formatting
+
 ## [0.14.3] - (2025-02-06)
 
 - Improved tooltip formatting for the Open Coin button:
