@@ -1,5 +1,11 @@
 # BankMail Changelog
 
+## [0.14.3] - (2025-02-06)
+
+- Improved tooltip formatting for the Open Coin button:
+  - Added separation between buyouts and high bids
+  - Fixed a text style inconsistency
+
 ## [0.14.2] - (2025-02-05)
 
 - Fixed an issue with the default sort dropdown text

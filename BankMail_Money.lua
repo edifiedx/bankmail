@@ -21,13 +21,19 @@ local function GetMoneyBySender()
             local category
             if subject then
                 if subject:find("Auction successful:") then
-                    category = "Auction Sales"
+                    -- Get the body text to check for buyout vs bid win
+                    local _, _, _, bid, buyout = GetInboxInvoiceInfo(i)
+                    if bid == buyout then
+                        category = "Auction Sales (Buyout)"
+                    elseif bid < buyout then
+                        category = "Auction Sales (High bidder)"
+                    else
+                        category = "Auction Sales (Unknown)"
+                    end
                 elseif subject:find("Outbid on") then
                     category = "Auction Returns"
                 elseif subject:find("Cancelled auction") then
                     category = "Auction Cancels"
-                elseif subject:find("Won") then
-                    category = "Auction Purchases"
                 else
                     -- Group by sender for non-auction mail
                     category = senderName or sender or "Unknown Sender"
@@ -53,16 +59,12 @@ function BankMail_Money:ProcessAllMoney()
     isCollecting = true
     local numItems = GetInboxNumItems()
     local foundMoney = false
-    moneyCollected = {} -- Reset collection totals
+    moneyCollected = GetMoneyBySender() -- Use the existing grouping function
 
     for i = 1, numItems do
-        local _, sender, _, subject, money = GetInboxHeaderInfo(i)
+        local _, _, _, _, money = GetInboxHeaderInfo(i)
         if money and money > 0 then
             foundMoney = true
-            -- Track money by category
-            local category = (subject and subject:find("Auction successful:")) and "Auction" or (sender or "Unknown")
-            moneyCollected[category] = (moneyCollected[category] or 0) + money
-
             TakeInboxMoney(i)
 
             -- Add a small delay before continuing to next mail
@@ -74,25 +76,31 @@ function BankMail_Money:ProcessAllMoney()
         end
     end
 
-    -- Print final totals only when we've finished processing all mails
+    -- Print final totals with enhanced categories
     if foundMoney then
-        -- Print individual categories
+        -- Sort categories for consistent display
+        local sortedCategories = {}
         for category, amount in pairs(moneyCollected) do
-            if category == "Auction" then
-                print("BankMail - Auction Money Collected: " .. C_CurrencyInfo.GetCoinTextureString(amount))
+            table.insert(sortedCategories, {category = category, amount = amount})
+        end
+        table.sort(sortedCategories, function(a, b) return a.category < b.category end)
+
+        -- Print sorted categories
+        for _, data in ipairs(sortedCategories) do
+            if data.category:find("Auction") then
+                print("BankMail - " .. data.category .. ": " .. 
+                    C_CurrencyInfo.GetCoinTextureString(data.amount))
             else
-                print("BankMail - Collected from " .. category .. ": " .. C_CurrencyInfo.GetCoinTextureString(amount))
+                print("BankMail - Collected from " .. data.category .. ": " .. 
+                    C_CurrencyInfo.GetCoinTextureString(data.amount))
             end
         end
 
         -- Print total if multiple categories exist
-        local categories = 0
-        for _ in pairs(moneyCollected) do categories = categories + 1 end
-
-        if categories > 1 then
+        if #sortedCategories > 1 then
             local total = 0
-            for _, amount in pairs(moneyCollected) do
-                total = total + amount
+            for _, data in ipairs(sortedCategories) do
+                total = total + data.amount
             end
             print("BankMail - Total Collected: " .. C_CurrencyInfo.GetCoinTextureString(total))
         end
@@ -155,14 +163,29 @@ function BankMail_Money:CreateCollectionButton()
             GameTooltip:AddLine(" ")                               -- Empty line for spacing
         end
 
-        -- Show auction money if it exists
-        if moneyGroups["Auction"] then
-            GameTooltip:AddLine("Pending auction coin:", nil, nil, nil, true)
-            GameTooltip:AddLine(C_CurrencyInfo.GetCoinTextureString(moneyGroups["Auction"]), 1, 1, 1, true)
-            if next(moneyGroups) ~= nil then -- If there are other categories
-                GameTooltip:AddLine(" ")     -- Empty line for spacing
+        -- Show auction money categories if they exist
+        local auctionCategories = {
+            ["Auction Sales (Buyout)"] = "Auction buyouts:",
+            ["Auction Sales (High bidder)"] = "Auction bids:",
+            ["Auction Returns"] = "Auction returns:",
+            ["Auction Cancels"] = "Cancelled auctions:"
+        }
+        
+        local hasAuctions = false
+        for category, label in pairs(auctionCategories) do
+            if moneyGroups[category] then
+                if not hasAuctions then
+                    GameTooltip:AddLine("Pending auction coin:")
+                    hasAuctions = true
+                end
+                GameTooltip:AddLine(label, 0.7, 0.7, 0.7, true)
+                GameTooltip:AddLine(C_CurrencyInfo.GetCoinTextureString(moneyGroups[category]), 1, 1, 1, true)
+                moneyGroups[category] = nil -- Remove so we don't show it again
             end
-            moneyGroups["Auction"] = nil     -- Remove so we don't show it again
+        end
+        
+        if hasAuctions and next(moneyGroups) ~= nil then
+            GameTooltip:AddLine(" ") -- Empty line for spacing
         end
 
         -- Show other categories
