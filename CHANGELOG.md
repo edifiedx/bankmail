@@ -1,5 +1,11 @@
 # BankMail Changelog
 
+## [0.14.5] - (2025-02-08)
+
+- Optimized some options panel functions
+- Removed duplicate initializations in the options module
+- Removed deprecated text field code
+
 ## [0.14.4] - (2025-02-07)
 
 - Fixed an issue with options formatting

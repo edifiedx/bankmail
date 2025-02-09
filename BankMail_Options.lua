@@ -3,30 +3,26 @@ print("Loading Options, BankMailDB exists:", BankMailDB ~= nil)
 
 local addonName = "BankMail"
 local Options = {
-    Panel = CreateFrame("Frame")
+    Panel = CreateFrame("Frame"),
+    SORT_KEYS = {
+        { text = "Name",    value = "name" },
+        { text = "Age",     value = "daysLeft" },
+        { text = "Quality", value = "quality" },
+        { text = "Count",   value = "count" },
+        { text = "Sender",  value = "sender" }
+    },
+    SORT_DIRECTIONS = {
+        { text = "Ascending",  value = true },
+        { text = "Descending", value = false }
+    }
 }
 _G[addonName .. "_Options"] = Options
 
 local panel = Options.Panel
 panel.name = "BankMail"
-panel:Hide()
 
-local category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
-Options.Category = category
+Options.Category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
 
--- Sort options
-Options.SORT_KEYS = {
-    { text = "Name",    value = "name" },
-    { text = "Age",     value = "daysLeft" },
-    { text = "Quality", value = "quality" },
-    { text = "Count",   value = "count" },
-    { text = "Sender",  value = "sender" }
-}
-
-Options.SORT_DIRECTIONS = {
-    { text = "Ascending",  value = true },
-    { text = "Descending", value = false }
-}
 
 local function CreateDropdown(parent, name, options, defaultValue, onSelect)
     local dropdown = CreateFrame("Frame", name, parent, "UIDropDownMenuTemplate")
@@ -260,24 +256,6 @@ function Options.Show(self)
         self:ClearFocus()
     end)
 
-    -- Add debug functions
-    local function OnAutoComplete(self, text, fullText, multipleMatches)
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Debug: Autocomplete triggered")
-            print("Text:", text)
-            print("Full Text:", fullText)
-            print("Multiple Matches:", multipleMatches)
-        end
-    end
-
-    bankCharInput.autoCompleteCallback = OnAutoComplete
-    bankCharInput.autoCompleteParams = AUTOCOMPLETE_LIST.MAIL
-    bankCharInput.autoCompleteFunction = GetAutoCompleteResults
-    AutoCompleteEditBox_SetAutoCompleteSource(bankCharInput, GetAutoCompleteResults, bankCharInput
-        .autoCompleteParams)
-    bankCharInput:SetScript("OnTabPressed", AutoCompleteEditBox_OnTabPressed)
-    bankCharInput:SetScript("OnTextChanged", AutoCompleteEditBox_OnTextChanged)
-    bankCharInput:SetScript("OnEditFocusLost", AutoCompleteEditBox_OnEditFocusLost)
     bankCharInput:SetScript("OnEscapePressed", function(self)
         self:SetText(BankMailDB.accountDefaultRecipient or "")
         self:ClearFocus()
@@ -463,6 +441,6 @@ panel:SetScript("OnShow", function(self)
     Options.Show(self)
 end)
 
-Settings.RegisterAddOnCategory(category)
+Settings.RegisterAddOnCategory(Options.Category)
 
 return Options
