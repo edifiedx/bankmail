@@ -9,12 +9,16 @@ frame:RegisterEvent("PLAYER_LOGIN")
 -- Addon name
 local addonName = "BankMail"
 
+local BankMail_Debug = _G[addonName .. "_Debug"]
 local BankMail_Money = _G[addonName .. "_Money"]
 local BankMail_AutoSwitch = _G[addonName .. "_AutoSwitch"]
 local BankMail_AutoAttach = _G[addonName .. "_AutoAttach"]
 local BankMail_AutoFill = _G[addonName .. "_AutoFill"]
 local BankMail_Options = _G[addonName .. "_Options"]
 local BankMail_Search = _G[addonName .. "_Search"]
+
+local debug = BankMail_Debug:CreateDebugger("Core")
+debug("Debug test")
 
 -- Update default settings
 local defaults = {

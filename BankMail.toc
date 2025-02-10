@@ -4,6 +4,7 @@
 ## SavedVariables: BankMailDB
 ## Version: 0.14.5
 
+BankMail_Debug.lua
 BankMail_AutoSwitch.lua
 BankMail_AutoAttach.lua
 BankMail_AutoFill.lua
