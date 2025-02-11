@@ -1,5 +1,6 @@
 -- Create the module
 local addonName = "BankMail"
+local Debug = _G[addonName .. "_Debug"]
 local BankMail_AutoAttach = {
     initialized = false
 }
@@ -9,6 +10,7 @@ _G[addonName .. "_AutoAttach"] = BankMail_AutoAttach
 local MAX_ATTACHMENTS = ATTACHMENTS_MAX_SEND or 12
 local ATTACH_DELAY = 0.3
 
+local debug = Debug:CreateDebugger("AutoAttach")
 
 -- Helper function to check if an item is BoE
 local function IsBoEItem(bag, slot)

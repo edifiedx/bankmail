@@ -1,5 +1,6 @@
 -- Create the module
 local addonName = "BankMail"
+local Debug = _G[addonName .. "_Debug"]
 local AutoSwitch = {
     initialized = false,
     mailLoadTimer = nil,
@@ -8,6 +9,7 @@ local AutoSwitch = {
 _G[addonName .. "_AutoSwitch"] = AutoSwitch
 
 -- Local variables
+local debug = Debug:CreateDebugger("AutoSwitch")
 local currentRealm = GetRealmName()
 local currentChar = UnitName("player")
 local isInitialLoad = false
@@ -52,18 +54,13 @@ local function HasUnreadMail()
         local _, _, sender, subject, money, _, daysLeft, _, wasRead = GetInboxHeaderInfo(i)
 
         -- Debug logging if enabled
-        if BankMailDB and BankMailDB.debugMode then
-            print(string.format("BankMail Debug: Mail %d - From: %s, Subject: %s, Money: %s, Read: %s",
-                i, sender or "nil", subject or "nil", tostring(money), tostring(wasRead)))
-        end
+        debug("Mail %d - From: %s, Subject: %s, Money: %s, Read: %s", i, sender or "nil", subject or "nil", tostring(money), tostring(wasRead))
 
         -- If header info isn't fully loaded yet, consider it as having unread mail
         if not wasRead or wasRead == nil then
             -- Additional check: if it's auction mail, wait for full details
             if subject and (subject:find("Auction") or subject:find("auction")) then
-                if BankMailDB and BankMailDB.debugMode then
-                    print("BankMail Debug: Found unread auction mail, waiting for details")
-                end
+                debug("Found unread auction mail, waiting for details")
                 return true
             end
 
@@ -89,9 +86,7 @@ function AutoSwitch:CheckAndSwitchTab()
 
     -- Check if we should disable auto-switch for bank character
     if not BankMailDB.enableAutoSwitchOnBank and IsCurrentCharacterBank() then
-        if BankMailDB.debugMode then
-            print("BankMail: Auto-switch disabled for bank character")
-        end
+        debug("Auto-switch disabled for bank character")
         return
     end
 
@@ -111,9 +106,7 @@ function AutoSwitch:CheckAndSwitchTab()
             local _, _, _, subject = GetInboxHeaderInfo(1)
             if not subject then
                 -- Mail data still loading, try again shortly
-                if BankMailDB and BankMailDB.debugMode then
-                    print("BankMail Debug: Mail data still loading, retrying...")
-                end
+                debug("Mail data still loading, retrying...")
                 C_Timer.After(0.2, function()
                     self:CheckAndSwitchTab()
                 end)
@@ -131,9 +124,7 @@ function AutoSwitch:CheckAndSwitchTab()
                 end
             end)
         else
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Debug: Unread mail detected, staying on inbox tab")
-            end
+            debug("Unread mail detected, staying on inbox tab")
         end
 
         self.mailLoadTimer = nil
@@ -141,9 +132,7 @@ function AutoSwitch:CheckAndSwitchTab()
 end
 
 function AutoSwitch:StartMailLoad()
-    if BankMailDB.debugMode then
-        print("BankMail: Starting mail load")
-    end
+    debug("Starting mail load")
 
     if self.mailLoadTimer then
         self.mailLoadTimer:Cancel()
@@ -156,9 +145,7 @@ function AutoSwitch:StartMailLoad()
     -- Set up a timeout to clear initial load state
     C_Timer.After(2.0, function()
         if isInitialLoad then
-            if BankMailDB.debugMode then
-                print("BankMail: Initial load timeout reached, clearing state")
-            end
+            debug("Initial load timeout reached, clearing state")
             isInitialLoad = false
         end
     end)
@@ -167,9 +154,7 @@ end
 function AutoSwitch:FinishMailLoad()
     -- Only proceed if we're in initial load
     if not isInitialLoad then
-        if BankMailDB.debugMode then
-            print("BankMail: Ignoring mail update - not in initial load")
-        end
+        debug("Ignoring mail update - not in initial load")
         return
     end
 
@@ -197,9 +182,7 @@ function AutoSwitch:Init()
         return
     end
 
-    if BankMailDB.debugMode then
-        print("BankMail AutoSwitch: Initialized for", currentChar, "on", currentRealm)
-    end
+    debug("Initialized for", currentChar, "on", currentRealm)
 
     self.initialized = true
 end

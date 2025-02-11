@@ -18,7 +18,6 @@ local BankMail_Options = _G[addonName .. "_Options"]
 local BankMail_Search = _G[addonName .. "_Search"]
 
 local debug = BankMail_Debug:CreateDebugger("Core")
-debug("Debug test")
 
 -- Update default settings
 local defaults = {
@@ -181,11 +180,19 @@ SLASH_BANKMAIL1 = "/bankmail"
 SLASH_BANKMAIL2 = "/bank"
 SlashCmdList["BANKMAIL"] = HandleSlashCommand
 
+local hide_count = 0
 -- Event handler
 frame:SetScript("OnEvent", function(self, event, ...)
     local arg1 = ...
     if BankMailDB and BankMailDB.debugMode and arg1 == addonName then
         print("BankMail: Event fired:", event, "arg1:", arg1 or "nil")
+    end
+
+    if MailFrame then
+        MailFrame:HookScript("OnHide", function ()
+            hide_count = hide_count + 1
+            print("BankMail Debug: MailFrame OnHide event triggered " .. hide_count)
+        end)
     end
 
     -- Handle addon initialization
@@ -205,9 +212,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
         -- Initialize saved variables that might be nil
         BankMailDB.characterRecipients = BankMailDB.characterRecipients or {}
 
-        if BankMailDB.debugMode then
-            print("BankMail: Database initialized")
-        end
+        debug("Database initialized")
 
         -- Initialize all modules
         if BankMail_AutoSwitch and BankMail_AutoSwitch.Init then
@@ -243,9 +248,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     -- Handle mail window opening
     if event == "MAIL_SHOW" then
-        if BankMailDB.debugMode then
-            print("BankMail: Mail show - current session:", BankMail_AutoSwitch.currentMailSession)
-        end
+        debug("Mail show - current session:" .. (BankMail_AutoSwitch.currentMailSession or "nil"))
 
         -- Start mail load process
         BankMail_AutoSwitch:StartMailLoad()
@@ -269,6 +272,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     -- Handle mail window closing
     if event == "MAIL_CLOSED" then
+        print("BankMail Debug: MAIL_CLOSED event triggered")
         if BankMailDB and BankMailDB.debugMode then
             print("BankMail Debug: MAIL_CLOSED event triggered")
             if BankMail_AutoSwitch then
@@ -284,11 +288,9 @@ frame:SetScript("OnEvent", function(self, event, ...)
         if BankMail_AutoSwitch then
             BankMail_AutoSwitch.currentMailSession = nil
 
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Debug: Session reset complete. New state:",
-                    BankMail_AutoSwitch.currentMailSession and
-                    date("[%I:%M:%S %p]", BankMail_AutoSwitch.currentMailSession) or "nil")
-            end
+            debug("Session reset complete. New state: " ..
+                (BankMail_AutoSwitch.currentMailSession and
+                date("[%I:%M:%S %p]", BankMail_AutoSwitch.currentMailSession) or "nil"))
         end
     end
 end)
