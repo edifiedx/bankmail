@@ -1,11 +1,13 @@
 -- Create the module
 local addonName = "BankMail"
+local Debug = _G[addonName .. "_Debug"]
 local AutoFill = {
     initialized = false
 }
 _G[addonName .. "_AutoFill"] = AutoFill
 
 -- Local variables
+local debug = Debug:CreateDebugger("AutoFill")
 local currentRealm = GetRealmName()
 local currentChar = UnitName("player")
 
@@ -81,17 +83,13 @@ function AutoFill:AutoFillRecipient()
     end
 
     if currentCharKey == recipient then
-        if BankMailDB.debugMode then
-            print("BankMail: Skipping autofill - recipient would be current character")
-        end
+        debug("Skipping autofill - recipient would be current character")
         return
     end
 
     -- Check if we should disable auto-fill for bank character
     if not BankMailDB.enableAutoSwitchOnBank and IsCurrentCharacterBank() then
-        if BankMailDB.debugMode then
-            print("BankMail: Auto-fill disabled for bank character")
-        end
+        debug("Skipping autofill - current character is bank")
         return
     end
 
@@ -146,9 +144,7 @@ function AutoFill:Init()
         end)
     end
 
-    if BankMailDB.debugMode then
-        print("BankMail AutoFill: Initialized for", currentChar, "on", currentRealm)
-    end
+    debug("Initialized for", currentChar, "on", currentRealm)
 
     self.initialized = true
 end

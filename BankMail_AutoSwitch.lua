@@ -53,8 +53,7 @@ local function HasUnreadMail()
         -- Get full header info
         local _, _, sender, subject, money, _, daysLeft, _, wasRead = GetInboxHeaderInfo(i)
 
-        -- Debug logging if enabled
-        debug("Mail %d - From: %s, Subject: %s, Money: %s, Read: %s", i, sender or "nil", subject or "nil", tostring(money), tostring(wasRead))
+        debug("Mail " .. i .. " - From: " .. (sender or "nil") .. ", Subject: " .. (subject or "nil") .. ", Money: " .. tostring(money) .. ", Read: " .. tostring(wasRead))
 
         -- If header info isn't fully loaded yet, consider it as having unread mail
         if not wasRead or wasRead == nil then
@@ -158,15 +157,13 @@ function AutoSwitch:FinishMailLoad()
         return
     end
 
-    if BankMailDB.debugMode then
-        print("BankMail: Finishing initial mail load")
-        print("BankMail: Status:")
-        print("BankMail: - Addon Enabled:", BankMailDB.enabled)
-        print("BankMail: - Mail Frame Visible:", MailFrame:IsVisible())
-        print("BankMail: - Has Unread Mail:", HasUnreadMail())
-        print("BankMail: - Is Bank Character:", IsCurrentCharacterBank())
-        print("BankMail: - Auto-switch Disabled for Bank:", not BankMailDB.enableAutoSwitchOnBank)
-    end
+    debug("Finishing initial mail load. Status:")
+    debug("Mail Load Timer:" .. tostring(self.mailLoadTimer))
+    debug("Mail Frame Visible:" .. tostring(MailFrame:IsVisible()))
+    -- debug("Addon Enabled:" .. BankMailDB.enabled)
+    -- debug("Has Unread Mail:" .. HasUnreadMail())
+    -- debug("Is Bank Character:" .. IsCurrentCharacterBank())
+    -- debug("Auto-switch Disabled for Bank:" .. not BankMailDB.enableAutoSwitchOnBank)
 
     -- Clear initial load state
     isInitialLoad = false
@@ -182,7 +179,7 @@ function AutoSwitch:Init()
         return
     end
 
-    debug("Initialized for", currentChar, "on", currentRealm)
+    debug("Initialized for" .. currentChar .. "on" .. currentRealm)
 
     self.initialized = true
 end

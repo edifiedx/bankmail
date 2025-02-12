@@ -48,9 +48,7 @@ local function TakeAllAttachments(mailIndex)
     local _, _, _, _, money, _, _, hasItem = GetInboxHeaderInfo(mailIndex)
     if not hasItem and not (money and money > 0) then return end
 
-    if BankMailDB.debugMode then
-        print("BankMail: Starting mail", mailIndex)
-    end
+    debug("Starting mail " .. mailIndex)
 
     -- First, scan the mail to know what we're dealing with
     local attachments = {}
@@ -62,9 +60,8 @@ local function TakeAllAttachments(mailIndex)
                 name = name,
                 count = count or 0
             })
-            if BankMailDB.debugMode then
-                print(string.format("BankMail: Found slot %d: %s x%d", i, name, count or 0))
-            end
+
+            debug("Found item " .. i .. ": " .. name .. " x" .. count)
         end
     end
 
@@ -184,14 +181,12 @@ local hide_count = 0
 -- Event handler
 frame:SetScript("OnEvent", function(self, event, ...)
     local arg1 = ...
-    if BankMailDB and BankMailDB.debugMode and arg1 == addonName then
-        print("BankMail: Event fired:", event, "arg1:", arg1 or "nil")
-    end
+    debug("Event fired:", event, "arg1:", arg1 or "nil")
 
     if MailFrame then
         MailFrame:HookScript("OnHide", function ()
             hide_count = hide_count + 1
-            print("BankMail Debug: MailFrame OnHide event triggered " .. hide_count)
+            debug("MailFrame OnHide event triggered " .. hide_count)
         end)
     end
 
@@ -272,16 +267,12 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     -- Handle mail window closing
     if event == "MAIL_CLOSED" then
-        print("BankMail Debug: MAIL_CLOSED event triggered")
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Debug: MAIL_CLOSED event triggered")
-            if BankMail_AutoSwitch then
-                local oldSession = BankMail_AutoSwitch.currentMailSession
-                print("BankMail Debug: Current session state before reset:",
-                    oldSession and date("[%I:%M:%S %p]", oldSession) or "nil")
-            else
-                print("BankMail Debug: AutoSwitch module not found!")
-            end
+        debug("BankMail Debug: MAIL_CLOSED event triggered")
+        if BankMail_AutoSwitch then
+            local oldSession = BankMail_AutoSwitch.currentMailSession
+            debug("BankMail Debug: Current session state before reset:" .. oldSession and date("[%I:%M:%S %p]", oldSession) or "nil")
+        else
+            debug("BankMail Debug: AutoSwitch module not found!")
         end
 
         -- Reset session state in auto-switch module

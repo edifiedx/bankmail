@@ -1,11 +1,13 @@
 -- Create the module
 local addonName = "BankMail"
+local Debug = _G[addonName .. "_Debug"]
 local BankMail_Money = {
     initialized = false
 }
 _G[addonName .. "_Money"] = BankMail_Money
 
 -- Local variables
+local debug = Debug:CreateDebugger("Money")
 local isCollecting = false
 local moneyCollected = {}
 
@@ -220,8 +222,7 @@ function BankMail_Money:CreateCollectionButton()
         BankMail_Money:ProcessAllMoney()
     end)
 
-    -- Add debug print
-    print("BankMail: Created collection button")
+    debug("BankMail: Created collection button")
 end
 
 -- Initialize module

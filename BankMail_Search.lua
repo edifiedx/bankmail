@@ -1,5 +1,6 @@
 -- Create the module
 local addonName = "BankMail"
+local Debug = _G[addonName .. "_Debug"]
 local BankMail_Search = {
     initialized = false,
     currentSearchText = "",
@@ -12,7 +13,7 @@ local BankMail_Search = {
 }
 _G[addonName .. "_Search"] = BankMail_Search
 
--- Constants
+local debug = Debug:CreateDebugger("Search")
 local MAX_RESULTS = 200
 local TAKE_ALL_DELAY = 0.3
 
@@ -25,9 +26,7 @@ local searchTimer = nil
 
 -- fucntion for sorting results based on current sort settings
 function BankMail_Search:SortResults(sortKey)
-    if BankMailDB.debugMode then
-        print("BankMail Search: Sorting by", sortKey)
-    end
+    debug("SortResults", "Sorting by %s", sortKey)
 
     -- Toggle direction if clicking same key
     if self.currentSort.key == sortKey then
@@ -91,40 +90,28 @@ end
 local function GetMailItems(mailIndex)
     local items = {}
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Starting GetMailItems for mail", mailIndex)
-    end
+    debug("Starting for mail " .. mailIndex)
 
     -- Get mail header info
     local _, _, sender, subject, _, _, daysLeft, hasItem = GetInboxHeaderInfo(mailIndex)
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Mail", mailIndex, "hasItem:", tostring(hasItem))
-    end
+    debug("Mail " .. mailIndex .. " hasItem: " .. tostring(hasItem))
 
     if not hasItem then
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: No items in mail", mailIndex)
-        end
+        debug("No items in mail " .. mailIndex)
         return items
     end
 
     -- Loop through attachment slots
     for attachIndex = 1, ATTACHMENTS_MAX_RECEIVE do
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: Checking attachment", attachIndex, "in mail", mailIndex)
-        end
+        debug("Checking attachment " .. attachIndex .. " in mail " .. mailIndex)
 
         local itemLink = GetInboxItemLink(mailIndex, attachIndex)
         if itemLink then
             local name, itemID, texture, count, quality = GetInboxItem(mailIndex, attachIndex)
 
             if name then
-                if BankMailDB and BankMailDB.debugMode then
-                    print("BankMail Search: Found item:", name, "x", count or 1)
-                    print("BankMail Search: ItemLink:", itemLink)
-                    print("BankMail Search: Texture:", texture)
-                end
+                debug("Found item: " .. name .. " x" .. (count or 1) .. " ItemLink: " .. itemLink .. " Texture: " .. texture)
 
                 table.insert(items, {
                     name = name,
@@ -141,25 +128,19 @@ local function GetMailItems(mailIndex)
                 })
             end
         else
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Search: No item in slot", attachIndex)
-            end
+            debug("No item in slot " .. attachIndex)
         end
     end
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Found", #items, "items in mail", mailIndex)
-    end
+    debug("Found " .. #items .. " items in mail " .. mailIndex)
 
     return items
 end
 
 -- Function to take all stacks of a specific item
 local function TakeAllStacksOfItem(itemID, itemStacks)
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Taking all stacks of itemID:", itemID)
-        print("BankMail Search: Found", #itemStacks, "stacks to collect")
-    end
+    debug("Taking all stacks of itemID: " .. itemID)
+    debug("Found " .. #itemStacks .. " stacks to collect")
 
     table.sort(itemStacks, function(a, b) return a.mailIndex < b.mailIndex end)
 
@@ -167,17 +148,12 @@ local function TakeAllStacksOfItem(itemID, itemStacks)
 
     local function TakeNextStack()
         if currentIndex > #itemStacks then
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Search: Finished taking all stacks")
-            end
+            debug("Finished taking all stacks")
             return
         end
 
         local stack = itemStacks[currentIndex]
-        if BankMailDB and BankMailDB.debugMode then
-            print(string.format("BankMail Search: Taking stack %d/%d from mail %d, slot %d",
-                currentIndex, #itemStacks, stack.mailIndex, stack.attachIndex))
-        end
+        debug("Taking stack " .. currentIndex .. "/" .. #itemStacks .. " from mail " .. stack.mailIndex .. ", slot " .. stack.attachIndex)
 
         -- Take the item
         TakeInboxItem(stack.mailIndex, stack.attachIndex)
@@ -205,9 +181,7 @@ end
 
 -- Function to search through inbox
 local function SearchInbox(searchText)
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: SearchInbox called with text:", searchText)
-    end
+    debug("Searching inbox for: " .. searchText)
     if not searchText or searchText == "" then return {} end
     if not GetInboxNumItems then
         print("BankMail Search: Mail API not available")
@@ -218,24 +192,17 @@ local function SearchInbox(searchText)
     local results = {}
     local numItems = GetInboxNumItems()
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Starting search through", numItems, "mails for:", searchText)
-    end
-
+    debug("Starting search through " .. numItems .. " mails for: " .. searchText)
     for i = 1, numItems do
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: Checking mail", i)
-        end
+        debug("Checking mail " .. i)
 
         local hasItem = select(8, GetInboxHeaderInfo(i))
         if hasItem then
             local items = GetMailItems(i)
             for _, item in ipairs(items) do
                 if item.name and item.name:lower():find(searchText) then
-                    if BankMailDB and BankMailDB.debugMode then
-                        print(string.format("BankMail Search: Found match: %s (x%d) in mail %d slot %d",
-                            item.name, item.count, item.mailIndex, item.attachIndex))
-                    end
+
+                    debug("Found match: " .. item.name .. " (x" .. item.count .. ") in mail " .. item.mailIndex .. ", slot " .. item.attachIndex)
                     table.insert(results, item)
                     if #results >= MAX_RESULTS then
                         print("BankMail Search: Reached maximum results limit of", MAX_RESULTS)
@@ -246,10 +213,7 @@ local function SearchInbox(searchText)
         end
     end
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Found", #results, "matching items")
-    end
-
+    debug("Search complete, found " .. #results .. " matching items")
     return results
 end
 
@@ -317,14 +281,10 @@ local function CreateSearchResultButton(parent)
 
     -- Add click handling
     button:SetScript("OnClick", function(self, buttonName)
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: Button clicked with:", buttonName)
-        end
+        debug("Button clicked with:", buttonName)
 
         if not self.itemID then
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Search: No itemID found")
-            end
+            debug("No itemID found")
             return
         end
 
@@ -336,9 +296,7 @@ local function CreateSearchResultButton(parent)
         elseif buttonName == "MiddleButton" then
             -- Open the parent mail message
             if self.mailIndex then
-                if BankMailDB and BankMailDB.debugMode then
-                    print("BankMail Search: Attempting to open mail at index:", self.mailIndex)
-                end
+                debug("Opening mail at index:", self.mailIndex)
 
                 -- First hide our search results
                 BankMail_Search:HideResults()
@@ -359,9 +317,7 @@ local function CreateSearchResultButton(parent)
                     end
                 end)
             else
-                if BankMailDB and BankMailDB.debugMode then
-                    print("BankMail Search: No mailIndex found for middle click")
-                end
+                debug("No mailIndex found for middle click")
             end
         elseif buttonName == "RightButton" then
             -- current search results
@@ -399,19 +355,11 @@ function BankMail_Search:SaveSearchState()
         wasVisible = self.resultsVisible,
         searchText = self.searchBox and self.searchBox:GetText() or ""
     }
-
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Saved state - ",
-            "Visible:", self.lastSearchState.wasVisible,
-            "Text:", self.lastSearchState.searchText
-        )
-    end
+    debug("Saved search state - visible:" .. self.lastSearchState.wasVisible .. " text:" .. self.lastSearchState.searchText)
 end
 
 function BankMail_Search:ClearSearch(updateUI)
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Clearing search state")
-    end
+    debug("Clearing search state")
 
     self.currentSearchText = ""
     self.isSearching = false
@@ -513,9 +461,7 @@ function BankMail_Search:CreateSearchUI()
                 if self.resultsVisible then
                     self:ClearSearch(true)
                 else
-                    if BankMailDB and BankMailDB.debugMode then
-                        print("BankMail Search: Show All button clicked")
-                    end
+                    debug("Show All button clicked")
                     self:ShowAllItems()
                 end
             end)
@@ -536,38 +482,26 @@ function BankMail_Search:CreateSearchUI()
 
         -- Handle escape and enter
         self.searchBox:SetScript("OnEscapePressed", function(self)
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Search: Escape pressed")
-                print("- Has text:", self:GetText() ~= "")
-                print("- Has focus:", self:HasFocus())
-            end
+            debug("Escape pressed - Has text:", self:GetText() ~= " - Has focus:", self:HasFocus())
 
             if self:GetText() ~= "" then
-                if BankMailDB and BankMailDB.debugMode then
-                    print("BankMail Search: Clearing text and focus")
-                end
+                debug("Clearing text and focus")
                 BankMail_Search:ClearSearch(true)
                 return
             end
 
             if self:HasFocus() then
-                if BankMailDB and BankMailDB.debugMode then
-                    print("BankMail Search: Dropping focus")
-                end
+                debug("Clearing focus")
                 self:ClearFocus()
                 return
             end
 
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Search: Closing mail window")
-            end
+            debug("Hiding mail frame")
             HideUIPanel(MailFrame)
         end)
 
         self.searchBox:SetScript("OnEnterPressed", function(self)
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Search: Enter pressed, clearing focus")
-            end
+            debug("Enter pressed - clearing focus")
             self:ClearFocus()
         end)
     end
@@ -648,9 +582,7 @@ function BankMail_Search:CreateSearchUI()
 
             -- Click handling
             button:SetScript("OnClick", function()
-                if BankMailDB.debugMode then
-                    print("Sort button clicked:", sortKey)
-                end
+                debug("Sort button clicked:", sortKey)
 
                 BankMail_Search:SortResults(sortKey)
 
@@ -698,51 +630,36 @@ end
 
 -- Function to collect and show all items in inbox
 function BankMail_Search:ShowAllItems()
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Collecting all inbox items")
-    end
+    debug("Collecting all inbox items")
 
     local allItems = {}
     local numItems = GetInboxNumItems()
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Found", numItems, "mails in inbox")
-    end
+    debug("Found " .. numItems .. " mails in inbox")
 
     for i = 1, numItems do
         local items = GetMailItems(i)
         for _, item in ipairs(items) do
             table.insert(allItems, item)
-            if BankMailDB and BankMailDB.debugMode then
-                print("BankMail Search: Added item:", item.name, "from mail", i)
-            end
+            debug("Added item: " .. item.name .. " from mail " .. i)
         end
     end
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Total items found:", #allItems)
-    end
-
+    debug("Total items found: " .. #allItems)
     self:ShowResults(allItems)
 end
 
 -- Function to show search results
 function BankMail_Search:ShowResults(results)
     if not self.container or not self.content then
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: UI not initialized, creating...")
-        end
+        debug("Creating UI")
         self:CreateSearchUI()
     end
 
     -- Apply default sort if no sort is active
     if not self.currentSort or not self.currentSort.hasExplicitSort then
         if BankMailDB and BankMailDB.defaultSort then
-            if BankMailDB.debugMode then
-                print("BankMail Search: Applying default sort -",
-                    "Key:", BankMailDB.defaultSort.key,
-                    "Ascending:", BankMailDB.defaultSort.ascending)
-            end
+            debug("Applying default sort - Key: " .. BankMailDB.defaultSort.key .. " Ascending:" .. tostring(BankMailDB.defaultSort.ascending))
 
             -- Sort the results using default settings
             table.sort(results, function(a, b)
@@ -815,10 +732,8 @@ function BankMail_Search:ShowResults(results)
     local contentWidth = self.container:GetWidth() - 25
     local columns = math.max(1, math.floor((contentWidth - padding) / (buttonSize + padding)))
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Displaying", #results, "results")
-        print("BankMail Search: Grid layout - Content width:", contentWidth, "Columns:", columns)
-    end
+    debug("Displaying " .. #results .. " results")
+    debug("Grid layout - Content width:", contentWidth, "Columns:", columns)
 
     for i, result in ipairs(results) do
         local button = table.remove(self.buttonPool) or CreateSearchResultButton(self.content)
@@ -880,15 +795,11 @@ end
 function BankMail_Search:OnSearchTextChanged(text)
     self.currentSearchText = text
 
-    if BankMailDB and BankMailDB.debugMode then
-        print("BankMail Search: Text changed to:", text)
-    end
+    debug("Search text changed to:", text)
 
     -- Cancel existing timer
     if searchTimer then
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: Cancelling existing search timer")
-        end
+        debug("Cancelling existing search timer")
         searchTimer:Cancel()
         searchTimer = nil
     end
@@ -898,15 +809,11 @@ function BankMail_Search:OnSearchTextChanged(text)
 
     -- Start new search
     if text and text ~= "" then
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: Starting new search")
-        end
+        debug("BankMail Search: Starting new search")
         local results = SearchInbox(text)
         self:ShowResults(results)
     else
-        if BankMailDB and BankMailDB.debugMode then
-            print("BankMail Search: Empty search text, hiding results")
-        end
+        debug("BankMail Search: Empty search text, hiding results")
         self:HideResults()
     end
 end
