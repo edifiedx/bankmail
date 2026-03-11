@@ -54,7 +54,8 @@ function BankMail_Search:SortResults(sortKey)
                 sender = btn.sender,
                 subject = btn.subject,
                 daysLeft = btn.daysLeft,
-                quality = select(3, C_Item.GetItemInfo(btn.itemLink))
+                quality = select(3, C_Item.GetItemInfo(btn.itemLink)),
+                iLevel = btn.iLevel
             })
         end
     end
@@ -109,6 +110,7 @@ local function GetMailItems(mailIndex)
         local itemLink = GetInboxItemLink(mailIndex, attachIndex)
         if itemLink then
             local name, itemID, texture, count, quality = GetInboxItem(mailIndex, attachIndex)
+            local _, _, _, iLevel = GetItemInfo(itemLink)
 
             if name then
                 debug("Found item: " .. name .. " x" .. (count or 1) .. " ItemLink: " .. itemLink .. " Texture: " .. texture)
@@ -124,7 +126,8 @@ local function GetMailItems(mailIndex)
                     sender = sender,
                     subject = subject,
                     daysLeft = daysLeft,
-                    quality = quality
+                    quality = quality,
+                    iLevel = iLevel or 0
                 })
             end
         else
@@ -137,46 +140,57 @@ local function GetMailItems(mailIndex)
     return items
 end
 
--- Function to take all stacks of a specific item
-local function TakeAllStacksOfItem(itemID, itemStacks)
+-- Extract item ID from an item link string
+local function GetItemIDFromLink(link)
+    if not link then return nil end
+    return tonumber(link:match("item:(%d+)"))
+end
+
+-- Function to take all stacks of a specific item.
+-- Re-scans the inbox live each iteration so stale mail indices (caused by
+-- WoW shifting indices when a mail is fully emptied) never pick up the
+-- wrong item or silently skip remaining stacks.
+local function TakeAllStacksOfItem(itemID)
     debug("Taking all stacks of itemID: " .. itemID)
-    debug("Found " .. #itemStacks .. " stacks to collect")
 
-    table.sort(itemStacks, function(a, b) return a.mailIndex < b.mailIndex end)
+    local function FindNextStack()
+        local numItems = GetInboxNumItems()
+        for i = 1, numItems do
+            local hasItem = select(8, GetInboxHeaderInfo(i))
+            if hasItem then
+                for slot = 1, ATTACHMENTS_MAX_RECEIVE do
+                    local link = GetInboxItemLink(i, slot)
+                    if link and GetItemIDFromLink(link) == itemID then
+                        return i, slot
+                    end
+                end
+            end
+        end
+        return nil, nil
+    end
 
-    local currentIndex = 1
-
-    local function TakeNextStack()
-        if currentIndex > #itemStacks then
+    local function TakeNext()
+        local mailIdx, slotIdx = FindNextStack()
+        if not mailIdx then
             debug("Finished taking all stacks")
             return
         end
 
-        local stack = itemStacks[currentIndex]
-        debug("Taking stack " .. currentIndex .. "/" .. #itemStacks .. " from mail " .. stack.mailIndex .. ", slot " .. stack.attachIndex)
+        debug("Taking item from mail " .. mailIdx .. ", slot " .. slotIdx)
+        TakeInboxItem(mailIdx, slotIdx)
 
-        -- Take the item
-        TakeInboxItem(stack.mailIndex, stack.attachIndex)
-
-        -- Set up next iteration
-        currentIndex = currentIndex + 1
-
-        -- Wait for the MAIL_INBOX_UPDATE event before proceeding
         C_Timer.After(TAKE_ALL_DELAY, function()
-            -- Verify the item was taken
-            local stillExists = GetInboxItemLink(stack.mailIndex, stack.attachIndex)
-            if stillExists then
-                -- Item still exists, try again
-                C_Timer.After(TAKE_ALL_DELAY, TakeNextStack)
+            local stillExists = GetInboxItemLink(mailIdx, slotIdx)
+            if stillExists and GetItemIDFromLink(stillExists) == itemID then
+                -- Item still exists in that slot, wait a bit longer
+                C_Timer.After(TAKE_ALL_DELAY, TakeNext)
             else
-                -- Item was taken, move to next
-                TakeNextStack()
+                TakeNext()
             end
         end)
     end
 
-    -- Start the process
-    TakeNextStack()
+    TakeNext()
 end
 
 -- Function to search through inbox
@@ -320,30 +334,7 @@ local function CreateSearchResultButton(parent)
                 debug("No mailIndex found for middle click")
             end
         elseif buttonName == "RightButton" then
-            -- current search results
-            local currentResults = {}
-            for _, btn in ipairs(BankMail_Search.activeButtons) do
-                if btn:IsShown() then
-                    table.insert(currentResults, {
-                        itemID = btn.itemID,
-                        mailIndex = btn.mailIndex,
-                        attachIndex = btn.attachIndex,
-                        name = btn.name
-                    })
-                end
-            end
-
-            -- Find all stacks of the same item
-            local sameItemStacks = {}
-            for _, result in ipairs(currentResults) do
-                if result.itemID == self.itemID then
-                    table.insert(sameItemStacks, result)
-                end
-            end
-
-            if #sameItemStacks > 0 then
-                TakeAllStacksOfItem(self.itemID, sameItemStacks)
-            end
+            TakeAllStacksOfItem(self.itemID)
         end
     end)
 
@@ -517,7 +508,7 @@ function BankMail_Search:CreateSearchUI()
         self.headerFrame:SetPoint("TOPRIGHT", self.container, "TOPRIGHT", -28, -8)
 
         -- Sort buttons configuration
-        local buttonWidth = 55
+        local buttonWidth = 48
         local padding = 3
         local currentX = padding + 3 -- Extra padding from left edge
 
@@ -606,6 +597,7 @@ function BankMail_Search:CreateSearchUI()
         self.sortButtons.quality = CreateSortButton("Qual", "quality")
         self.sortButtons.count = CreateSortButton("Count", "count")
         self.sortButtons.sender = CreateSortButton("From", "sender")
+        self.sortButtons.iLevel = CreateSortButton("iLvl", "iLevel")
     end
 
 
@@ -762,6 +754,7 @@ function BankMail_Search:ShowResults(results)
         button.sender = result.sender
         button.subject = result.subject
         button.daysLeft = result.daysLeft
+        button.iLevel = result.iLevel
         button:Show()
 
         table.insert(self.activeButtons, button)

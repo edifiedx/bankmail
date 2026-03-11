@@ -1,5 +1,11 @@
 # BankMail Changelog
 
+## [0.15.0] - (2026-03-11)
+
+- Updated interface version to 11508
+- Fixed right-click "take all" in Browse collecting wrong or missing items due to stale mail indices shifting when a mail is fully emptied
+- Added sort by iLvl in the Browse tab and Options default sort dropdown
+
 ## [0.14.5] - (2025-02-08)
 
 - Optimized some options panel functions

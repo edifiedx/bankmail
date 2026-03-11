@@ -9,7 +9,8 @@ local Options = {
         { text = "Age",     value = "daysLeft" },
         { text = "Quality", value = "quality" },
         { text = "Count",   value = "count" },
-        { text = "Sender",  value = "sender" }
+        { text = "Sender",  value = "sender" },
+        { text = "iLvl",    value = "iLevel" }
     },
     SORT_DIRECTIONS = {
         { text = "Ascending",  value = true },
